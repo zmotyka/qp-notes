@@ -994,7 +994,8 @@ async function setupAndConnect(){
   claudeKey = key;
   msg.textContent = 'Opening Google authorisation…'; msg.className='';
   $('connectBtn').disabled = true;
-  const params = new URLSearchParams({client_id:cid, redirect_uri:'https://claude.ai', response_type:'token', scope:'https://www.googleapis.com/auth/drive.file', prompt:'consent'});
+  const redirectUri = window.location.origin + window.location.pathname;
+  const params = new URLSearchParams({client_id:cid, redirect_uri:redirectUri, response_type:'token', scope:'https://www.googleapis.com/auth/drive.file', prompt:'consent'});
   const popup = window.open('https://accounts.google.com/o/oauth2/v2/auth?'+params, 'gdrive', 'width=520,height=620');
   const iv = setInterval(async()=>{
     try{
