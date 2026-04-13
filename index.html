@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>QP Notes — Pharmaceutical Documentation Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0f11;
+  --bg2: #161619;
+  --bg3: #1c1c20;
+  --bg4: #222227;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #e8e8ec;
+  --text2: #9090a0;
+  --text3: #606070;
+  --accent: #7c9fff;
+  --accent2: #4d78ff;
+  --accent-bg: rgba(124,159,255,0.08);
+  --accent-border: rgba(124,159,255,0.25);
+  --green: #4fd6a4;
+  --green-bg: rgba(79,214,164,0.08);
+  --green-border: rgba(79,214,164,0.2);
+  --amber: #f5b94e;
+  --amber-bg: rgba(245,185,78,0.08);
+  --amber-border: rgba(245,185,78,0.2);
+  --red: #f06a6a;
+  --red-bg: rgba(240,106,106,0.08);
+  --red-border: rgba(240,106,106,0.2);
+  --radius: 8px;
+  --radius-lg: 12px;
+  --font: 'DM Sans', sans-serif;
+  --font-serif: 'Playfair Display', serif;
+  --font-mono: 'DM Mono', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+  height: 100vh;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── SETUP SCREEN ─── */
+#setupScreen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: var(--bg);
+}
+
+.setup-card {
+  width: 480px;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  padding: 40px;
+}
+
+.setup-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.setup-logo-mark {
+  width: 36px;
+  height: 36px;
+  background: var(--accent2);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.setup-logo-mark svg { width: 18px; height: 18px; }
+
+.setup-logo-text {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  color: var(--text);
+}
+
+.setup-logo-sub {
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 2px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.setup-card h2 {
+  font-size: 22px;
+  font-weight: 400;
+  font-family: var(--font-serif);
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.setup-card p {
+  font-size: 13px;
+  color: var(--text2);
+  margin-bottom: 28px;
+  line-height: 1.6;
+}
+
+.form-group { margin-bottom: 16px; }
+
+.form-group label {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 6px;
+}
+
+.form-group input {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  transition: border-color 0.15s;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: var(--accent-border);
+  background: var(--bg4);
+}
+
+.form-group input::placeholder { color: var(--text3); }
+
+.setup-tip {
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  font-size: 12px;
+  color: var(--text2);
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.setup-tip strong { color: var(--accent); font-weight: 500; }
+.setup-tip code { font-family: var(--font-mono); font-size: 11px; color: var(--accent); }
+
+.btn-connect {
+  width: 100%;
+  height: 42px;
+  background: var(--accent2);
+  border: none;
+  border-radius: var(--radius);
+  color: #fff;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: opacity 0.15s, transform 0.1s;
+}
+
+.btn-connect:hover { opacity: 0.88; }
+.btn-connect:active { transform: scale(0.99); }
+.btn-connect:disabled { opacity: 0.4; cursor: not-allowed; }
+
+#setupMsg {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text2);
+  margin-top: 12px;
+  min-height: 18px;
+}
+
+#setupMsg.err { color: var(--red); }
+
+/* ─── MAIN APP ─── */
+#mainApp {
+  display: none;
+  height: 100vh;
+  flex-direction: column;
+}
+
+/* ─── TOPBAR ─── */
+.topbar {
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--bg);
+}
+
+.topbar-logo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-shrink: 0;
+  margin-right: 4px;
+}
+
+.topbar-logo-mark {
+  width: 26px;
+  height: 26px;
+  background: var(--accent2);
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.topbar-logo-mark svg { width: 13px; height: 13px; }
+
+.topbar-logo-text {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  color: var(--text);
+}
+
+.divider-v {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.search-wrap {
+  position: relative;
+  flex: 1;
+  max-width: 340px;
+}
+
+.search-wrap input {
+  width: 100%;
+  height: 32px;
+  padding: 0 10px 0 32px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 12px;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.search-wrap input:focus {
+  outline: none;
+  border-color: var(--accent-border);
+  background: var(--bg2);
+}
+
+.search-wrap input::placeholder { color: var(--text3); }
+
+.search-icon {
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.topbar-filters { display: flex; gap: 8px; align-items: center; }
+
+select.filter-select {
+  height: 30px;
+  padding: 0 8px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text2);
+  font-family: var(--font);
+  font-size: 11px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+select.filter-select:focus { outline: none; border-color: var(--accent-border); }
+
+.topbar-actions { display: flex; gap: 6px; margin-left: auto; align-items: center; }
+
+.btn {
+  height: 30px;
+  padding: 0 12px;
+  background: transparent;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text2);
+  font-family: var(--font);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn:hover { border-color: var(--border2); color: var(--text); background: var(--bg3); }
+.btn:active { transform: scale(0.98); }
+.btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+
+.btn-accent {
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+
+.btn-accent:hover { background: rgba(124,159,255,0.14); color: var(--accent); border-color: var(--accent); }
+
+.btn-success-outline {
+  background: var(--green-bg);
+  border-color: var(--green-border);
+  color: var(--green);
+}
+
+.btn-success-outline:hover { background: rgba(79,214,164,0.14); }
+
+.btn-danger-outline {
+  background: var(--red-bg);
+  border-color: var(--red-border);
+  color: var(--red);
+}
+
+.btn-danger-outline:hover { background: rgba(240,106,106,0.14); }
+
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  height: 30px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 11px;
+  color: var(--text2);
+}
+
+.user-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  flex-shrink: 0;
+}
+
+/* ─── BODY ─── */
+.body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ─── TREE ─── */
+.tree-panel {
+  width: 196px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  padding: 12px 0;
+  background: var(--bg);
+}
+
+.tree-section {
+  padding: 12px 14px 4px;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text3);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.tree-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  font-size: 12px;
+  color: var(--text2);
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  transition: all 0.1s;
+}
+
+.tree-item:hover { color: var(--text); background: var(--bg3); }
+
+.tree-item.active {
+  color: var(--accent);
+  background: var(--accent-bg);
+  border-left-color: var(--accent);
+}
+
+.tree-item.folder { color: var(--text); font-weight: 500; font-size: 12px; }
+.tree-item.folder.active { color: var(--accent); }
+.tree-item.month { padding-left: 28px; font-size: 11px; color: var(--text3); }
+.tree-item.month:hover { color: var(--text2); }
+.tree-item.month.active { color: var(--accent); }
+
+.tree-icon { opacity: 0.5; flex-shrink: 0; }
+
+/* ─── FILE LIST ─── */
+.list-panel {
+  width: 240px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  background: var(--bg);
+}
+
+.list-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 1;
+}
+
+.list-header-count { font-size: 11px; color: var(--text3); }
+
+.spinner {
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid var(--border2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.file-item {
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+  border-left: 2px solid transparent;
+}
+
+.file-item:hover { background: var(--bg3); }
+
+.file-item.active {
+  background: var(--accent-bg);
+  border-left-color: var(--accent);
+}
+
+.file-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 4px;
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+.file-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.badge {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.03em;
+}
+
+.badge-raw {
+  background: var(--amber-bg);
+  color: var(--amber);
+  border: 1px solid var(--amber-border);
+}
+
+.badge-gen {
+  background: var(--green-bg);
+  color: var(--green);
+  border: 1px solid var(--green-border);
+}
+
+.file-month { font-size: 10px; color: var(--text3); }
+
+.file-snip {
+  font-size: 11px;
+  color: var(--text3);
+  line-height: 1.4;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.highlight {
+  background: rgba(245,185,78,0.2);
+  color: var(--amber);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+/* ─── EDITOR ─── */
+.editor-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+  background: var(--bg2);
+}
+
+.empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text3);
+}
+
+.empty-state-icon {
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  opacity: 0.4;
+}
+
+.empty-state p { font-size: 13px; color: var(--text3); }
+.empty-state small { font-size: 11px; color: var(--text3); opacity: 0.6; }
+
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  background: var(--bg2);
+}
+
+.editor-filename {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.editor-doctype select {
+  height: 28px;
+  padding: 0 8px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text2);
+  font-family: var(--font);
+  font-size: 11px;
+}
+
+.editor-doctype select:focus { outline: none; }
+
+.etabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  padding: 0 14px;
+  gap: 2px;
+  background: var(--bg2);
+}
+
+.etab {
+  padding: 7px 12px;
+  font-size: 12px;
+  color: var(--text3);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all 0.1s;
+}
+
+.etab:hover { color: var(--text2); }
+.etab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.editor-body { flex: 1; overflow: hidden; position: relative; }
+
+textarea.code-editor {
+  width: 100%;
+  height: 100%;
+  padding: 16px;
+  background: var(--bg2);
+  border: none;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.8;
+  resize: none;
+  outline: none;
+  tab-size: 2;
+}
+
+.preview-pane {
+  display: none;
+  width: 100%;
+  height: 100%;
+  padding: 24px 32px;
+  overflow-y: auto;
+  background: var(--bg2);
+}
+
+.preview-pane h1 { font-family: var(--font-serif); font-size: 22px; font-weight: 400; color: var(--text); margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+.preview-pane h2 { font-size: 14px; font-weight: 500; color: var(--text); margin: 20px 0 8px; text-transform: uppercase; letter-spacing: 0.06em; }
+.preview-pane h3 { font-size: 13px; font-weight: 500; color: var(--text2); margin: 14px 0 5px; }
+.preview-pane p { color: var(--text2); margin-bottom: 10px; line-height: 1.7; }
+.preview-pane ul, .preview-pane ol { padding-left: 20px; margin-bottom: 10px; color: var(--text2); }
+.preview-pane li { margin-bottom: 4px; line-height: 1.6; }
+.preview-pane code { font-family: var(--font-mono); font-size: 11px; background: var(--bg3); color: var(--accent); padding: 1px 5px; border-radius: 4px; }
+.preview-pane pre { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; font-family: var(--font-mono); font-size: 11px; color: var(--text2); overflow-x: auto; margin-bottom: 14px; white-space: pre-wrap; word-break: break-word; line-height: 1.7; }
+.preview-pane table { width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 12px; }
+.preview-pane th { background: var(--bg3); font-weight: 500; color: var(--text); text-align: left; padding: 7px 10px; border: 1px solid var(--border2); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
+.preview-pane td { padding: 7px 10px; border: 1px solid var(--border); color: var(--text2); }
+.preview-pane strong { color: var(--text); font-weight: 500; }
+
+/* ─── NEW NOTE PANEL ─── */
+.new-note-panel {
+  display: none;
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 28px;
+  background: var(--bg2);
+}
+
+.new-note-panel h3 {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--text);
+  margin-bottom: 20px;
+}
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+
+.field label {
+  display: block;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 5px;
+}
+
+.field input, .field select, .field textarea {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 12px;
+  transition: border-color 0.15s;
+}
+
+.field input, .field select { height: 34px; padding: 0 10px; }
+
+.field textarea {
+  padding: 10px;
+  resize: vertical;
+  line-height: 1.7;
+  min-height: 180px;
+}
+
+.field input:focus, .field select:focus, .field textarea:focus {
+  outline: none;
+  border-color: var(--accent-border);
+  background: var(--bg4);
+}
+
+.field input::placeholder, .field textarea::placeholder { color: var(--text3); }
+.field select option { background: var(--bg3); }
+
+.new-note-actions { display: flex; gap: 8px; margin-top: 16px; }
+
+/* ─── STATUS BAR ─── */
+.statusbar {
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  flex-shrink: 0;
+}
+
+.status-msg { font-size: 11px; color: var(--text3); min-height: 14px; }
+.status-msg.ok { color: var(--green); }
+.status-msg.err { color: var(--red); }
+.status-right { font-size: 10px; color: var(--text3); letter-spacing: 0.05em; }
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+/* ─── ANIMATIONS ─── */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in { animation: fadeIn 0.2s ease forwards; }
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div id="setupScreen">
+  <div class="setup-card fade-in">
+    <div class="setup-logo">
+      <div class="setup-logo-mark">
+        <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 4h12M3 8h8M3 12h10" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div>
+        <div class="setup-logo-text">QP Notes</div>
+        <div class="setup-logo-sub">Pharmaceutical Documentation</div>
+      </div>
+    </div>
+    <h2>Connect to get started</h2>
+    <p>Enter your credentials below. Both keys remain in browser memory only and are cleared when you close the tab — nothing is stored or transmitted elsewhere.</p>
+    <div class="form-group">
+      <label>Anthropic API Key</label>
+      <input type="password" id="s_apiKey" placeholder="sk-ant-…" autocomplete="off"/>
+    </div>
+    <div class="form-group">
+      <label>Google OAuth Client ID</label>
+      <input type="text" id="s_clientId" placeholder="xxxxxxxx.apps.googleusercontent.com"/>
+    </div>
+    <div class="setup-tip">
+      <strong>One-time Google setup (5 min):</strong> Go to <code>console.cloud.google.com</code> → New project → Enable Google Drive API → Credentials → OAuth 2.0 Client ID → Web application → Add your hosting origin as an authorised JavaScript origin. Free on a personal Google account.
+    </div>
+    <button class="btn-connect" id="connectBtn" onclick="setupAndConnect()">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="white" stroke-width="1.3"/><path d="M5.5 8l1.8 1.8L10.5 6" stroke="white" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Connect and open Drive
+    </button>
+    <div id="setupMsg"></div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-logo">
+      <div class="topbar-logo-mark">
+        <svg viewBox="0 0 18 18" fill="none"><path d="M3 4h12M3 8h8M3 12h10" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </div>
+      <span class="topbar-logo-text">QP Notes</span>
+    </div>
+    <div class="divider-v"></div>
+    <div class="search-wrap">
+      <svg class="search-icon" width="13" height="13" viewBox="0 0 16 16" fill="none">
+        <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.4"/>
+        <path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+      </svg>
+      <input type="text" id="searchInput" placeholder="Search all notes…" oninput="onSearch(this.value)"/>
+    </div>
+    <div class="topbar-filters">
+      <select class="filter-select" id="filterType" onchange="applyFilter()">
+        <option value="">All types</option>
+        <option value="deviation">Deviation / OOS</option>
+        <option value="capa">CAPA</option>
+        <option value="batch">Batch release</option>
+        <option value="sop">SOP</option>
+        <option value="change">Change control</option>
+        <option value="supplier">Supplier qual</option>
+      </select>
+      <select class="filter-select" id="filterKind" onchange="applyFilter()">
+        <option value="">All files</option>
+        <option value="raw">Raw notes</option>
+        <option value="structured">Generated docs</option>
+      </select>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-accent" onclick="showNewNote()">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        New note
+      </button>
+      <button class="btn" onclick="refreshDrive()">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 6a5 5 0 105-5 5 5 0 01-3.2 1.2M1 1v3h3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Refresh
+      </button>
+      <div class="user-chip">
+        <div class="user-dot"></div>
+        <span id="userEmail">Connected</span>
+      </div>
+      <button class="btn" onclick="disconnectAll()" style="color:var(--text3)">Disconnect</button>
+    </div>
+  </div>
+
+  <!-- BODY -->
+  <div class="body">
+
+    <!-- TREE -->
+    <div class="tree-panel" id="treePanel">
+      <div class="tree-section">Library</div>
+      <div class="tree-item folder active" onclick="selectTree('all')" id="tree-all">
+        <svg class="tree-icon" width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1" y="1" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.2"/><path d="M4 4h5M4 6.5h5M4 9h3" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+        All notes
+      </div>
+      <div class="tree-section" style="margin-top:8px">Raw notes</div>
+      <div class="tree-item folder" onclick="selectTree('raw')" id="tree-raw">
+        <svg class="tree-icon" width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 10V3a1 1 0 011-1h4l3 3v5a1 1 0 01-1 1H3a1 1 0 01-1-1z" stroke="currentColor" stroke-width="1.2"/><path d="M7 2v3h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        raw/
+      </div>
+      <div id="rawMonths"></div>
+      <div class="tree-section" style="margin-top:8px">Generated</div>
+      <div class="tree-item folder" onclick="selectTree('generated')" id="tree-generated">
+        <svg class="tree-icon" width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 10V3a1 1 0 011-1h4l3 3v5a1 1 0 01-1 1H3a1 1 0 01-1-1z" stroke="currentColor" stroke-width="1.2"/><path d="M7 2v3h3M4 7l1.5 1.5L8 6" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        generated/
+      </div>
+      <div id="genMonths"></div>
+    </div>
+
+    <!-- FILE LIST -->
+    <div class="list-panel">
+      <div class="list-header">
+        <span class="list-header-count" id="listCount">0 files</span>
+        <span id="listSpinner" style="display:none"><div class="spinner"></div></span>
+      </div>
+      <div id="fileList"></div>
+    </div>
+
+    <!-- EDITOR -->
+    <div class="editor-panel">
+
+      <div class="empty-state" id="editorEmpty">
+        <div class="empty-state-icon">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="4" y="3" width="14" height="16" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M7 8h8M7 11h8M7 14h5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        </div>
+        <p>Select a file to view or edit</p>
+        <small>Or create a new note with + New note</small>
+      </div>
+
+      <div id="editorMain" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+        <div class="editor-toolbar">
+          <span class="editor-filename" id="editorFilename"></span>
+          <span class="badge" id="editorKindBadge"></span>
+          <div class="editor-doctype">
+            <select id="editorDocType">
+              <option value="deviation">Deviation / OOS</option>
+              <option value="capa">CAPA</option>
+              <option value="batch">Batch release</option>
+              <option value="sop">SOP</option>
+              <option value="change">Change control</option>
+              <option value="supplier">Supplier qual</option>
+              <option value="general">General</option>
+            </select>
+          </div>
+          <button class="btn btn-success-outline" id="saveBtn" onclick="saveFile()">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Save
+          </button>
+          <button class="btn btn-accent" id="rerunBtn" onclick="saveAndRerun()">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 6a5 5 0 105-5 5 5 0 01-3.2 1.2M1 1v3h3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Save + re-convert
+          </button>
+          <button class="btn btn-danger-outline" onclick="deleteFile()">Delete</button>
+        </div>
+        <div class="etabs">
+          <div class="etab active" onclick="swETab('edit')">Edit</div>
+          <div class="etab" onclick="swETab('preview')">Preview</div>
+        </div>
+        <div class="editor-body">
+          <textarea class="code-editor" id="editorArea" spellcheck="false" oninput="markDirty()"></textarea>
+          <div class="preview-pane" id="previewArea"></div>
+        </div>
+      </div>
+
+      <div class="new-note-panel" id="newNotePanel">
+        <h3>New note</h3>
+        <div class="form-row">
+          <div class="field">
+            <label>Document type</label>
+            <select id="nn_docType">
+              <option value="deviation">Deviation / OOS investigation</option>
+              <option value="capa">CAPA</option>
+              <option value="batch">Batch release summary</option>
+              <option value="sop">SOP / process description</option>
+              <option value="change">Change control</option>
+              <option value="supplier">Supplier qualification</option>
+              <option value="general">General</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Note format</label>
+            <select id="nn_noteFormat">
+              <option value="bullets">Rough bullet points</option>
+              <option value="prose">Typed prose</option>
+              <option value="transcript">Voice / dictation transcript</option>
+              <option value="meeting">Meeting notes</option>
+              <option value="structured">Already structured</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label>Reference / batch number</label>
+            <input type="text" id="nn_ref" placeholder="e.g. DEV-2026-041"/>
+          </div>
+          <div class="field">
+            <label>Process context (optional)</label>
+            <input type="text" id="nn_ctx" placeholder="e.g. sterile fill-finish"/>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:16px">
+          <label>Raw notes</label>
+          <textarea id="nn_notes" placeholder="Paste your notes here — rough is fine. Voice transcripts, bullets, meeting scribbles, anything."></textarea>
+        </div>
+        <div class="new-note-actions">
+          <button class="btn btn-accent" onclick="createNote()">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 6a5 5 0 105-5 5 5 0 01-3.2 1.2M1 1v3h3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Save raw + convert
+          </button>
+          <button class="btn btn-success-outline" onclick="saveRawOnly()">Save raw only</button>
+          <button class="btn" onclick="cancelNew()">Cancel</button>
+        </div>
+      </div>
+
+    </div><!-- /editor-panel -->
+  </div><!-- /body -->
+
+  <div class="statusbar">
+    <span class="status-msg" id="statusMsg"></span>
+    <span class="status-right" id="statusRight">QP Notes v1.0</span>
+  </div>
+
+</div><!-- /mainApp -->
+
+<script>
+let gToken='', gEmail='', claudeKey='', allFiles=[], filteredFiles=[], currentFile=null, dirty=false, currentTree='all', searchDebounce=null;
+
+function $(id){ return document.getElementById(id); }
+
+function setStatus(msg, type){
+  const el = $('statusMsg');
+  el.textContent = msg;
+  el.className = 'status-msg' + (type ? ' '+type : '');
+}
+
+// ─── SETUP ───
+async function setupAndConnect(){
+  const key = $('s_apiKey').value.trim();
+  const cid = $('s_clientId').value.trim();
+  const msg = $('setupMsg');
+  if(!key.startsWith('sk-ant-')){ msg.textContent='Invalid API key — should start with sk-ant-'; msg.className='err'; return; }
+  if(!cid){ msg.textContent='Enter your Google OAuth Client ID'; msg.className='err'; return; }
+  claudeKey = key;
+  msg.textContent = 'Opening Google authorisation…'; msg.className='';
+  $('connectBtn').disabled = true;
+  const params = new URLSearchParams({client_id:cid, redirect_uri:'https://claude.ai', response_type:'token', scope:'https://www.googleapis.com/auth/drive.file', prompt:'consent'});
+  const popup = window.open('https://accounts.google.com/o/oauth2/v2/auth?'+params, 'gdrive', 'width=520,height=620');
+  const iv = setInterval(async()=>{
+    try{
+      const url = popup.location.href;
+      if(url.includes('access_token')){
+        clearInterval(iv); popup.close();
+        const h = new URLSearchParams(url.split('#')[1] || url.split('?')[1] || '');
+        gToken = h.get('access_token');
+        if(gToken){
+          const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{Authorization:'Bearer '+gToken}});
+          const d = await r.json();
+          gEmail = d.email || 'Connected';
+          $('userEmail').textContent = gEmail;
+          $('setupScreen').style.display = 'none';
+          $('mainApp').style.display = 'flex';
+          await refreshDrive();
+        }
+      }
+    } catch(e){}
+    if(popup.closed){ clearInterval(iv); $('connectBtn').disabled=false; }
+  }, 500);
+}
+
+function disconnectAll(){
+  gToken=''; claudeKey=''; allFiles=[]; filteredFiles=[]; currentFile=null;
+  $('setupScreen').style.display='flex';
+  $('mainApp').style.display='none';
+  $('s_apiKey').value=''; $('s_clientId').value='';
+  $('setupMsg').textContent=''; $('connectBtn').disabled=false;
+}
+
+// ─── DRIVE HELPERS ───
+async function gFetch(url, opts={}){
+  const r = await fetch(url,{...opts, headers:{Authorization:'Bearer '+gToken,'Content-Type':'application/json',...(opts.headers||{})}});
+  if(!r.ok){ const e=await r.json().catch(()=>({})); throw new Error(e.error?.message||'HTTP '+r.status); }
+  return r.json();
+}
+
+async function getOrCreateFolder(name, parentId){
+  const q = `name='${name}' and mimeType='application/vnd.google-apps.folder'${parentId?" and '"+parentId+"' in parents":''} and trashed=false`;
+  const d = await gFetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id)`);
+  if(d.files && d.files.length) return d.files[0].id;
+  const cd = await gFetch('https://www.googleapis.com/drive/v3/files',{method:'POST', body:JSON.stringify({name, mimeType:'application/vnd.google-apps.folder',...(parentId?{parents:[parentId]}:{})})});
+  return cd.id;
+}
+
+async function getFolderIdForKind(kind){
+  const rootId = await getOrCreateFolder('QP-Notes');
+  const folderId = await getOrCreateFolder(kind==='raw'?'raw':'generated', rootId);
+  const ym = new Date().toISOString().slice(0,7);
+  return await getOrCreateFolder(ym, folderId);
+}
+
+async function uploadFile(name, content, folderId){
+  const meta = {name, parents:[folderId]};
+  const form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify(meta)],{type:'application/json'}));
+  form.append('file', new Blob([content],{type:'text/markdown'}));
+  const r = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name',{method:'POST',headers:{Authorization:'Bearer '+gToken},body:form});
+  return r.json();
+}
+
+// ─── REFRESH / LOAD ───
+async function refreshDrive(){
+  $('listSpinner').style.display='inline';
+  setStatus('Loading Drive…');
+  try{
+    const fields='files(id,name,parents,modifiedTime,webViewLink)';
+    let files=[], pageToken='';
+    do{
+      const url=`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent("mimeType!='application/vnd.google-apps.folder' and trashed=false and name contains '.md'")}&fields=${fields}&pageSize=200&orderBy=modifiedTime+desc${pageToken?'&pageToken='+pageToken:''}`;
+      const d = await gFetch(url);
+      files = [...files,...(d.files||[])];
+      pageToken = d.nextPageToken||'';
+    } while(pageToken);
+    allFiles = files.map(f=>({...f, kind:f.name.includes('-raw')?'raw':'structured', docType:guessDocType(f.name), month:f.modifiedTime?f.modifiedTime.slice(0,7):''}));
+    buildTree(); applyFilter();
+    setStatus('Loaded '+allFiles.length+' file'+(allFiles.length!==1?'s':''), 'ok');
+  } catch(e){ setStatus('Error: '+e.message,'err'); }
+  finally{ $('listSpinner').style.display='none'; }
+}
+
+function guessDocType(name){
+  const n = name.toLowerCase();
+  if(n.includes('deviation')||n.includes('oos')) return 'deviation';
+  if(n.includes('capa')) return 'capa';
+  if(n.includes('batch')) return 'batch';
+  if(n.includes('sop')) return 'sop';
+  if(n.includes('change')) return 'change';
+  if(n.includes('supplier')) return 'supplier';
+  return 'general';
+}
+
+function buildTree(){
+  const rawM = [...new Set(allFiles.filter(f=>f.kind==='raw').map(f=>f.month))].sort().reverse();
+  const genM = [...new Set(allFiles.filter(f=>f.kind==='structured').map(f=>f.month))].sort().reverse();
+  $('rawMonths').innerHTML = rawM.map(m=>`<div class="tree-item month" onclick="selectTree('raw-${m}')" id="tree-rm-${m}">${m}</div>`).join('');
+  $('genMonths').innerHTML = genM.map(m=>`<div class="tree-item month" onclick="selectTree('gen-${m}')" id="tree-gm-${m}">${m}</div>`).join('');
+}
+
+function selectTree(key){
+  currentTree = key;
+  document.querySelectorAll('.tree-item').forEach(el=>el.classList.remove('active'));
+  const idMap = {'all':'tree-all','raw':'tree-raw','generated':'tree-generated'};
+  const elId = idMap[key] || (key.startsWith('raw-')?'tree-rm-'+key.slice(4):'tree-gm-'+key.slice(4));
+  const el = $(elId);
+  if(el) el.classList.add('active');
+  applyFilter();
+}
+
+function applyFilter(){
+  const q = $('searchInput').value.toLowerCase().trim();
+  const type = $('filterType').value;
+  const kind = $('filterKind').value;
+  filteredFiles = allFiles.filter(f=>{
+    if(type && f.docType!==type) return false;
+    if(kind && f.kind!==kind) return false;
+    if(currentTree==='raw' && f.kind!=='raw') return false;
+    if(currentTree==='generated' && f.kind!=='structured') return false;
+    if(currentTree.startsWith('raw-') && (f.kind!=='raw'||f.month!==currentTree.slice(4))) return false;
+    if(currentTree.startsWith('gen-') && (f.kind!=='structured'||f.month!==currentTree.slice(4))) return false;
+    if(q && !f.name.toLowerCase().includes(q) && !(f._content||'').toLowerCase().includes(q)) return false;
+    return true;
+  });
+  renderList(q);
+}
+
+function renderList(q=''){
+  $('listCount').textContent = filteredFiles.length+' file'+(filteredFiles.length!==1?'s':'');
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const hl = t => q ? t.replace(new RegExp(esc(q),'gi'), m=>`<span class="highlight">${m}</span>`) : t;
+  $('fileList').innerHTML = filteredFiles.map((f,i)=>`
+    <div class="file-item${currentFile&&currentFile.id===f.id?' active':''}" onclick="openFile(${i})">
+      <div class="file-name">${hl(f.name.replace('.md',''))}</div>
+      <div class="file-meta">
+        <span class="badge ${f.kind==='raw'?'badge-raw':'badge-gen'}">${f.kind==='raw'?'raw':'generated'}</span>
+        <span class="file-month">${f.month||''}</span>
+      </div>
+      ${f._content?`<div class="file-snip">${hl(f._content.slice(0,120).replace(/[<>]/g,''))}</div>`:''}
+    </div>`).join('');
+}
+
+function onSearch(val){
+  clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(async()=>{
+    if(val.length > 2){
+      setStatus('Fetching content for search…');
+      const unfetched = allFiles.filter(f=>!f._content).slice(0,30);
+      await Promise.all(unfetched.map(async f=>{
+        try{
+          const r = await fetch(`https://www.googleapis.com/drive/v3/files/${f.id}?alt=media`,{headers:{Authorization:'Bearer '+gToken}});
+          f._content = await r.text();
+        } catch(e){}
+      }));
+    }
+    applyFilter();
+    setStatus('');
+  }, 400);
+}
+
+// ─── OPEN FILE ───
+async function openFile(idx){
+  if(dirty && !confirm('You have unsaved changes. Discard?')) return;
+  dirty = false;
+  const f = filteredFiles[idx];
+  currentFile = f;
+  setStatus('Loading…');
+  try{
+    const r = await fetch(`https://www.googleapis.com/drive/v3/files/${f.id}?alt=media`,{headers:{Authorization:'Bearer '+gToken}});
+    const text = await r.text();
+    f._content = text;
+    $('editorEmpty').style.display='none';
+    $('newNotePanel').style.display='none';
+    $('editorMain').style.display='flex';
+    $('editorFilename').textContent = f.name;
+    $('editorKindBadge').textContent = f.kind==='raw'?'raw':'generated';
+    $('editorKindBadge').className = 'badge '+(f.kind==='raw'?'badge-raw':'badge-gen');
+    $('editorDocType').value = f.docType||'general';
+    $('editorArea').value = text;
+    swETab('edit');
+    setStatus('');
+    renderList($('searchInput').value.toLowerCase());
+  } catch(e){ setStatus('Error loading file: '+e.message,'err'); }
+}
+
+function markDirty(){ dirty=true; }
+
+// ─── SAVE ───
+async function saveFile(){
+  if(!currentFile) return;
+  const content = $('editorArea').value;
+  setStatus('Saving…');
+  try{
+    await fetch(`https://www.googleapis.com/upload/drive/v3/files/${currentFile.id}?uploadType=media`,{
+      method:'PATCH',
+      headers:{Authorization:'Bearer '+gToken,'Content-Type':'text/markdown'},
+      body:content
+    });
+    currentFile._content = content;
+    dirty = false;
+    setStatus('Saved.','ok');
+  } catch(e){ setStatus('Save failed: '+e.message,'err'); }
+}
+
+async function saveAndRerun(){
+  await saveFile();
+  if(!currentFile) return;
+  const content = $('editorArea').value;
+  const docType = $('editorDocType').value;
+  setStatus('Re-converting with Claude…');
+  $('rerunBtn').disabled=true;
+  try{
+    const generated = await callClaude(content, docType, 'bullets','','');
+    const baseName = currentFile.name.replace('-raw.md','').replace('.md','');
+    const genName = baseName+'-structured.md';
+    const existing = allFiles.find(f=>f.name===genName);
+    if(existing){
+      await fetch(`https://www.googleapis.com/upload/drive/v3/files/${existing.id}?uploadType=media`,{
+        method:'PATCH',
+        headers:{Authorization:'Bearer '+gToken,'Content-Type':'text/markdown'},
+        body:generated
+      });
+      existing._content = generated;
+    } else {
+      const parentId = await getFolderIdForKind('structured');
+      await uploadFile(genName, generated, parentId);
+    }
+    setStatus('Re-converted and saved.','ok');
+    await refreshDrive();
+  } catch(e){ setStatus('Re-convert failed: '+e.message,'err'); }
+  finally{ $('rerunBtn').disabled=false; }
+}
+
+async function deleteFile(){
+  if(!currentFile || !confirm('Delete '+currentFile.name+'? This cannot be undone.')) return;
+  try{
+    await fetch(`https://www.googleapis.com/drive/v3/files/${currentFile.id}`,{method:'DELETE',headers:{Authorization:'Bearer '+gToken}});
+    allFiles = allFiles.filter(f=>f.id!==currentFile.id);
+    currentFile=null; dirty=false;
+    $('editorMain').style.display='none';
+    $('editorEmpty').style.display='flex';
+    buildTree(); applyFilter();
+    setStatus('Deleted.','ok');
+  } catch(e){ setStatus('Delete failed: '+e.message,'err'); }
+}
+
+// ─── NEW NOTE ───
+function showNewNote(){
+  $('editorEmpty').style.display='none';
+  $('editorMain').style.display='none';
+  $('newNotePanel').style.display='block';
+  $('nn_notes').focus();
+}
+
+function cancelNew(){
+  $('newNotePanel').style.display='none';
+  $('editorEmpty').style.display='flex';
+}
+
+async function createNote(){
+  const notes = $('nn_notes').value.trim();
+  if(!notes){ setStatus('Add some notes first.','err'); return; }
+  const docType = $('nn_docType').value;
+  const fmt = $('nn_noteFormat').value;
+  const ref = $('nn_ref').value.trim().replace(/[^a-zA-Z0-9\-_]/g,'-');
+  const ctx = $('nn_ctx').value.trim();
+  const date = new Date().toISOString().slice(0,10);
+  const base = [docType, ref, date].filter(Boolean).join('-');
+  setStatus('Saving raw notes and converting…');
+  try{
+    const rawId = await getFolderIdForKind('raw');
+    await uploadFile(base+'-raw.md', notes, rawId);
+    const generated = await callClaude(notes, docType, fmt, ctx, ref);
+    const genId = await getFolderIdForKind('structured');
+    await uploadFile(base+'-structured.md', generated, genId);
+    $('nn_notes').value=''; $('nn_ref').value=''; $('nn_ctx').value='';
+    $('newNotePanel').style.display='none';
+    $('editorEmpty').style.display='flex';
+    await refreshDrive();
+    setStatus('Saved raw + generated to Drive.','ok');
+  } catch(e){ setStatus('Error: '+e.message,'err'); }
+}
+
+async function saveRawOnly(){
+  const notes = $('nn_notes').value.trim();
+  if(!notes){ setStatus('Add some notes first.','err'); return; }
+  const docType = $('nn_docType').value;
+  const ref = $('nn_ref').value.trim().replace(/[^a-zA-Z0-9\-_]/g,'-');
+  const date = new Date().toISOString().slice(0,10);
+  const base = [docType, ref, date].filter(Boolean).join('-');
+  try{
+    const rawId = await getFolderIdForKind('raw');
+    await uploadFile(base+'-raw.md', notes, rawId);
+    $('nn_notes').value=''; $('nn_ref').value='';
+    $('newNotePanel').style.display='none';
+    $('editorEmpty').style.display='flex';
+    await refreshDrive();
+    setStatus('Raw notes saved.','ok');
+  } catch(e){ setStatus('Error: '+e.message,'err'); }
+}
+
+// ─── CLAUDE ───
+async function callClaude(notes, docType, noteFormat, context, ref){
+  if(!claudeKey) throw new Error('No API key');
+  const dtLabels={deviation:'Deviation / OOS investigation',capa:'CAPA',batch:'Batch release summary',sop:'SOP / process description',change:'Change control record',supplier:'Supplier qualification',general:'General pharmaceutical QA notes'};
+  const dtInstr={
+    deviation:'Structure as deviation investigation: Summary, Product/Batch details, Description of deviation, Root cause analysis (mermaid fishbone or flowchart), Containment actions, Risk assessment, CAPA linkage, QP assessment, Disposition recommendation.',
+    capa:'Structure as CAPA record: Problem statement, Root cause (mermaid fishbone or why-why), Action plan (mermaid Gantt if dates present, else flowchart), Effectiveness criteria, Responsible parties, Status.',
+    batch:'Structure as batch release summary: Product details table, Manufacturing summary, In-process controls, Analytical results table, Deviations noted, QP checklist, Release decision flowchart.',
+    sop:'Structure as SOP: Purpose, Scope, Responsibilities, Equipment/materials, Steps, mandatory mermaid process flowchart, Decision points, Related documents.',
+    change:'Structure as change control: Change description, Rationale, Risk assessment, Impact diagram (mermaid), Validation requirements, Regulatory impact, Implementation plan, QP approval pathway.',
+    supplier:'Structure as supplier qualification: Supplier details, Scope, Audit summary, Technical assessment, QA agreement status, Risk classification, Approved materials, Monitoring.',
+    general:'Structure into logical sections. Identify processes/workflows and render as mermaid diagrams. Add summary at top.'
+  };
+  const fmtInstr={bullets:'Rough bullets — infer structure.',prose:'Prose — extract and reorganise.',transcript:'Voice transcript — clean and structure.',meeting:'Meeting notes — extract actions and decisions.',structured:'Already structured — refine and add diagrams.'};
+  const ctx = context?`\nContext: ${context}`:'';
+  const refLine = ref?`\nReference: ${ref}`:'';
+  const prompt = `You are a pharmaceutical QA documentation specialist supporting a Qualified Person (QP). Convert the notes below into a professional structured markdown document.
+
+Document type: ${dtLabels[docType]||docType}
+Note format: ${noteFormat}${ctx}${refLine}
+
+INSTRUCTIONS:
+${dtInstr[docType]||dtInstr.general}
+${fmtInstr[noteFormat]||''}
+
+RULES:
+- Output pure markdown only — no preamble, no explanation outside the document
+- Use # for document title, ## for main sections, ### for subsections
+- Use tables for structured data (results, parameters, personnel)
+- Insert [TO COMPLETE] for missing information rather than omitting sections
+- All mermaid diagrams must be in fenced code blocks: \`\`\`mermaid
+- Keep mermaid syntax simple and valid — prefer flowchart LR or TD
+- Use flowchart for process flows, sequenceDiagram for party interactions, stateDiagram-v2 for lifecycles, gantt only if dates/durations present
+- Add a metadata block at the top: Document type, Status: DRAFT, Date: ${new Date().toISOString().slice(0,10)}, Prepared by: [QP]
+
+NOTES:
+${notes}`;
+  const r = await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':claudeKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:'claude-sonnet-4-20250514', max_tokens:4096, messages:[{role:'user',content:prompt}]})
+  });
+  if(!r.ok){ const e=await r.json().catch(()=>({})); throw new Error(e.error?.message||'HTTP '+r.status); }
+  const d = await r.json();
+  return d.content.map(b=>b.text||'').join('');
+}
+
+// ─── EDITOR TABS ───
+function swETab(t){
+  document.querySelectorAll('.etab').forEach(x=>x.classList.remove('active'));
+  document.querySelector(`.etab[onclick="swETab('${t}')"]`).classList.add('active');
+  if(t==='edit'){
+    $('editorArea').style.display='block';
+    $('previewArea').style.display='none';
+  } else {
+    $('editorArea').style.display='none';
+    $('previewArea').style.display='block';
+    renderPreview($('editorArea').value);
+  }
+}
+
+function renderPreview(md){
+  let h = md
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/^# (.+)$/gm,'<h1>$1</h1>')
+    .replace(/^## (.+)$/gm,'<h2>$1</h2>')
+    .replace(/^### (.+)$/gm,'<h3>$1</h3>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+    .replace(/```mermaid([\s\S]*?)```/g,'<pre>[mermaid diagram]\n$1</pre>')
+    .replace(/```[\w]*([\s\S]*?)```/g,'<pre>$1</pre>')
+    .replace(/^\|(.+)\|$/gm,(m,row)=>`<tr>${row.split('|').map(c=>`<td>${c.trim()}</td>`).join('')}</tr>`)
+    .replace(/(<tr>.*<\/tr>\n?)+/g,s=>`<table>${s}</table>`)
+    .replace(/^- (.+)$/gm,'<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/g,s=>`<ul>${s}</ul>`)
+    .replace(/\n{2,}/g,'</p><p>')
+    .replace(/\n/g,'<br>');
+  $('previewArea').innerHTML = '<p>'+h+'</p>';
+}
+</script>
+</body>
+</html>
