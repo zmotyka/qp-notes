@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        window.FontAwesomeConfig = {
+          autoReplaceSvg: 'nest'
+        };
+      </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Nexus Notes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        surface: {
+                            50: '#F8FAFC',
+                            100: '#F1F5F9',
+                            200: '#E2E8F0',
+                            300: '#CBD5E1',
+                            400: '#94A3B8',
+                            500: '#64748B',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1E293B',
+                            900: '#0F172A',
+                            950: '#020617',
+                        },
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        },
+                        accent: {
+                            green: '#10B981',
+                            orange: '#F59E0B',
+                            red: '#EF4444',
+                            yellow: '#FBBF24',
+                        }
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+                        'inner-soft': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.02)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { margin: 0; padding: 0; background-color: #E2E8F0; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        .bento-card { background: #FFFFFF; border-radius: 24px; box-shadow: 0 4px 24px -4px rgba(0,0,0,0.05); }
+        .dark .bento-card { background: #1E293B; box-shadow: 0 4px 24px -4px rgba(0,0,0,0.2); }
+        
+        /* Custom styles inspired by the reference, mapped to context colors */
+        .auth-input {
+            background-color: #F8FAFC;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+        .auth-input:focus {
+            background-color: #FFFFFF;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+        .dark .auth-input {
+            background-color: #0F172A;
+            border-color: #334155;
+            color: #F8FAFC;
+        }
+        .dark .auth-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+        }
+        
+        .method-btn {
+            background-color: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            transition: all 0.2s;
+        }
+        .method-btn:hover {
+            border-color: #CBD5E1;
+            background-color: #F8FAFC;
+        }
+        .dark .method-btn {
+            background-color: #1E293B;
+            border-color: #334155;
+        }
+        .dark .method-btn:hover {
+            border-color: #475569;
+            background-color: #0F172A;
+        }
+        
+        .device-sign-in {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        .device-sign-in::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transform: skewX(-20deg);
+            animation: shine 3s infinite;
+        }
+        .dark .device-sign-in {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.05) 100%);
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+        .dark .device-sign-in::before {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+        }
+        
+        @keyframes shine {
+            100% { left: 200%; }
+        }
+    </style>
+</head>
+<body class="text-surface-800 dark:text-surface-200 antialiased min-h-screen overflow-x-hidden flex flex-col bg-[#E2E8F0] dark:bg-surface-900 transition-colors duration-200 m-0 p-0">
+
+    <!-- Utility Bar (Language & RTL) -->
+    <div id="utility-bar" class="w-full h-10 bg-white/80 dark:bg-surface-800/80 backdrop-blur-md border-b border-surface-200 dark:border-surface-700 flex items-center justify-end px-6 z-20 absolute top-0 left-0">
+        <div class="flex items-center gap-4">
+            <button class="flex items-center gap-2 text-xs font-medium text-surface-500 hover:text-surface-900 dark:hover:text-white transition-colors" title="Toggle Right-to-Left">
+                <i class="fa-solid fa-align-right"></i> RTL
+            </button>
+            <div class="h-4 w-[1px] bg-surface-200 dark:bg-surface-700"></div>
+            <div class="relative group cursor-pointer">
+                <div class="flex items-center gap-2 text-xs font-medium text-surface-500 hover:text-surface-900 dark:hover:text-white transition-colors">
+                    <i class="fa-solid fa-globe"></i> English (US) <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                </div>
+            </div>
+            <div class="h-4 w-[1px] bg-surface-200 dark:bg-surface-700"></div>
+            <button class="text-surface-500 hover:text-surface-900 dark:hover:text-white transition-colors text-sm" title="Toggle Theme">
+                <i class="fa-regular fa-moon"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Auth Container -->
+    <main class="flex-1 flex items-center justify-center p-6 md:p-12 pt-16 relative z-10">
+        
+        <!-- Background decorative elements -->
+        <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div id="auth-card" class="w-full max-w-[480px] bento-card relative z-10 overflow-hidden">
+            
+            <!-- Header Section -->
+            <div class="p-8 pb-6 text-center border-b border-surface-100 dark:border-surface-800">
+                <div class="w-12 h-12 rounded-xl bg-brand-500 text-white flex items-center justify-center font-bold text-2xl shadow-soft mx-auto mb-4">
+                    N
+                </div>
+                <h1 class="text-2xl font-bold text-surface-900 dark:text-white mb-2">Welcome to Nexus</h1>
+                <p class="text-sm text-surface-500">Sign in to access your secure workspace.</p>
+            </div>
+
+            <div class="p-8 space-y-6">
+                
+                <!-- Device-Based Sign-In (Primary Action) -->
+                <div id="device-auth" class="space-y-3">
+                    <button class="w-full device-sign-in rounded-xl p-4 flex items-center justify-between group transition-all hover:shadow-soft cursor-pointer">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-full bg-brand-500 text-white flex items-center justify-center shadow-sm">
+                                <i class="fa-solid fa-fingerprint text-lg"></i>
+                            </div>
+                            <div class="text-left">
+                                <div class="font-semibold text-brand-700 dark:text-brand-300">Sign in with Passkey</div>
+                                <div class="text-xs text-brand-600/70 dark:text-brand-400/70">Biometric or device lock</div>
+                            </div>
+                        </div>
+                        <div class="w-8 h-8 rounded-full bg-white/50 dark:bg-surface-800/50 flex items-center justify-center text-brand-500 group-hover:translate-x-1 transition-transform">
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </div>
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <div class="flex-1 h-[1px] bg-surface-200 dark:bg-surface-700"></div>
+                    <span class="text-xs font-medium text-surface-400 uppercase tracking-wider">or continue with</span>
+                    <div class="flex-1 h-[1px] bg-surface-200 dark:bg-surface-700"></div>
+                </div>
+
+                <!-- SSO Options -->
+                <div class="grid grid-cols-2 gap-3">
+                    <button class="method-btn w-full rounded-xl p-3 flex items-center justify-center gap-3 text-sm font-medium text-surface-700 dark:text-surface-300">
+                        <i class="fa-brands fa-google text-red-500"></i> Google
+                    </button>
+                    <button class="method-btn w-full rounded-xl p-3 flex items-center justify-center gap-3 text-sm font-medium text-surface-700 dark:text-surface-300">
+                        <i class="fa-brands fa-github text-surface-900 dark:text-white"></i> GitHub
+                    </button>
+                    <button class="method-btn w-full rounded-xl p-3 flex items-center justify-center gap-3 text-sm font-medium text-surface-700 dark:text-surface-300">
+                        <i class="fa-brands fa-microsoft text-blue-500"></i> Microsoft
+                    </button>
+                    <button class="method-btn w-full rounded-xl p-3 flex items-center justify-center gap-3 text-sm font-medium text-surface-700 dark:text-surface-300">
+                        <i class="fa-brands fa-apple text-surface-900 dark:text-white"></i> Apple
+                    </button>
+                </div>
+
+                <!-- Email Form -->
+                <form class="space-y-4" onsubmit="event.preventDefault();">
+                    <div class="space-y-1.5">
+                        <label for="email" class="block text-xs font-medium text-surface-700 dark:text-surface-300 ml-1">Email Address</label>
+                        <div class="relative">
+                            <i class="fa-regular fa-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-surface-400"></i>
+                            <input type="email" id="email" placeholder="name@company.com" class="auth-input w-full rounded-xl py-3 pl-10 pr-4 text-sm text-surface-900 outline-none">
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="w-full bg-surface-900 hover:bg-surface-800 dark:bg-brand-600 dark:hover:bg-brand-500 text-white rounded-xl py-3 text-sm font-semibold transition-colors shadow-sm flex items-center justify-center gap-2">
+                        Continue with Email
+                    </button>
+                </form>
+
+                <!-- Footer Links & Security -->
+                <div class="pt-4 space-y-4">
+                    <div class="flex items-center justify-between text-sm">
+                        <a href="#" class="text-surface-500 hover:text-brand-500 font-medium transition-colors">Forgot password?</a>
+                        <a href="#" class="text-surface-500 hover:text-brand-500 font-medium transition-colors">Create account</a>
+                    </div>
+                    
+                    <div class="flex items-center justify-center gap-2 text-xs text-surface-500 bg-surface-50 dark:bg-surface-800/50 py-2.5 rounded-lg border border-surface-100 dark:border-surface-800">
+                        <i class="fa-solid fa-lock text-surface-400"></i>
+                        <span>End-to-end encrypted & secure.</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+</body>
+</html>

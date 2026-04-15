@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        window.FontAwesomeConfig = {
+          autoReplaceSvg: 'nest'
+        };
+      </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Version History - Nexus Notes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        surface: {
+                            50: '#F8FAFC',
+                            100: '#F1F5F9',
+                            200: '#E2E8F0',
+                            300: '#CBD5E1',
+                            400: '#94A3B8',
+                            500: '#64748B',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1E293B',
+                            900: '#0F172A',
+                            950: '#020617',
+                        },
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        },
+                        accent: {
+                            green: '#10B981',
+                            orange: '#F59E0B',
+                            red: '#EF4444',
+                            yellow: '#FBBF24',
+                        }
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+                        'inner-soft': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.02)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { margin: 0; padding: 0; background-color: #E2E8F0; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        .bento-card { background: #FFFFFF; border-radius: 24px; box-shadow: 0 4px 24px -4px rgba(0,0,0,0.05); }
+        .dark .bento-card { background: #1E293B; box-shadow: 0 4px 24px -4px rgba(0,0,0,0.2); }
+        .bento-inner-card { background: #F8FAFC; border-radius: 16px; padding: 20px; border: 1px solid #E2E8F0; }
+        .dark .bento-inner-card { background: #0F172A; border-color: #334155; }
+        
+        .code-block { font-family: 'JetBrains Mono', monospace; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; font-size: 14px; overflow-x: auto; }
+        .dark .code-block { background: #0F172A; border-color: #334155; color: #E2E8F0; }
+        
+        .diff-add { background-color: rgba(16, 185, 129, 0.1); color: #059669; }
+        .dark .diff-add { background-color: rgba(16, 185, 129, 0.2); color: #34D399; }
+        .diff-remove { background-color: rgba(239, 68, 68, 0.1); color: #DC2626; text-decoration: line-through; }
+        .dark .diff-remove { background-color: rgba(239, 68, 68, 0.2); color: #F87171; }
+    </style>
+</head>
+<body class="text-surface-800 dark:text-surface-200 antialiased h-screen overflow-hidden flex bg-[#E2E8F0] dark:bg-surface-900 transition-colors duration-200 m-0 p-0">
+
+    <!-- Left Sidebar: Navigation & Notes List -->
+    <aside id="left-sidebar" class="w-[320px] h-full flex-shrink-0 flex flex-col border-r border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 z-20 transition-all duration-300 relative">
+        <div class="p-6 flex items-center justify-between border-b border-surface-100 dark:border-surface-700">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-brand-500 text-white flex items-center justify-center font-bold text-lg shadow-soft">
+                    N
+                </div>
+                <span class="font-semibold text-lg tracking-tight">Nexus Notes</span>
+            </div>
+            <button class="text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 transition-colors xl:hidden">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <div class="p-4 border-b border-surface-100 dark:border-surface-700">
+            <div class="relative">
+                <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-surface-400 text-sm"></i>
+                <input type="text" placeholder="Search versions... (⌘K)" class="w-full pl-9 pr-4 py-2 bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none transition-all">
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-4 space-y-6">
+            <!-- System Navigation -->
+            <div>
+                <nav class="space-y-1">
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-colors">
+                        <i class="fa-solid fa-house w-5 text-center"></i>
+                        <span class="text-sm font-medium">Note Editor Dashboard</span>
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-colors">
+                        <i class="fa-solid fa-shapes w-5 text-center"></i>
+                        <span class="text-sm font-medium">Templates & Snippets</span>
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 font-medium">
+                        <i class="fa-solid fa-clock-rotate-left w-5 text-center"></i>
+                        <span class="text-sm font-medium">Version History</span>
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-colors">
+                        <i class="fa-solid fa-file-zipper w-5 text-center"></i>
+                        <span class="text-sm font-medium">Backup & Restore</span>
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-colors">
+                        <i class="fa-solid fa-shield-halved w-5 text-center"></i>
+                        <span class="text-sm font-medium">Settings & Security</span>
+                    </a>
+                </nav>
+            </div>
+        </div>
+
+        <div class="p-4 border-t border-surface-100 dark:border-surface-700">
+            <div class="flex items-center gap-3">
+                <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-4.jpg" alt="User" class="w-10 h-10 rounded-full border-2 border-white dark:border-surface-800 shadow-sm">
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-surface-900 dark:text-white truncate">Alex Morgan</p>
+                    <p class="text-xs text-surface-500 truncate">Product Manager</p>
+                </div>
+                <button class="text-surface-400 hover:text-surface-600 transition-colors">
+                    <i class="fa-solid fa-gear"></i>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Center: Main Content -->
+    <main class="flex-1 flex flex-col h-full relative bg-[#F8FAFC] dark:bg-[#0F172A] z-10">
+        
+        <!-- Header -->
+        <header class="h-14 flex-shrink-0 border-b border-surface-200 dark:border-surface-700 flex items-center justify-between px-6 bg-white dark:bg-surface-800 z-10">
+            <div class="flex items-center gap-4">
+                <h1 class="text-lg font-semibold text-surface-900 dark:text-white">Version History: Q3 Sales Dashboard Analysis</h1>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <label class="flex items-center gap-2 text-sm text-surface-600 dark:text

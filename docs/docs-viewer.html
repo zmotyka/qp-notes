@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QP Notes — Specification Docs</title>
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --text: #e6edf3; --text2: #8b949e; --accent: #58a6ff;
+    --accent-bg: rgba(88,166,255,0.1); --green: #3fb950; --font: system-ui, -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; }
+
+  /* Layout */
+  .shell { display: flex; height: 100vh; }
+  .sidebar { width: 280px; background: var(--surface); border-right: 1px solid var(--border); overflow-y: auto; flex-shrink: 0; padding: 16px 0; }
+  .main { flex: 1; overflow-y: auto; padding: 32px 48px 80px; max-width: 960px; }
+
+  /* Sidebar */
+  .sidebar h2 { padding: 0 16px 12px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text2); }
+  .nav-item { display: block; padding: 8px 16px 8px 24px; font-size: 14px; color: var(--text2); text-decoration: none; border-left: 3px solid transparent; cursor: pointer; transition: all 0.15s; }
+  .nav-item:hover { color: var(--text); background: var(--accent-bg); }
+  .nav-item.active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-bg); }
+  .nav-section { margin: 16px 0 4px; padding: 0 16px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text2); opacity: 0.6; }
+
+  /* Badges */
+  .badge { display: inline-block; background: var(--accent-bg); color: var(--accent); font-size: 10px; padding: 1px 6px; border-radius: 8px; margin-left: 6px; }
+
+  /* Content */
+  .doc-section { display: none; }
+  .doc-section.active { display: block; }
+  .doc-section h1 { font-size: 28px; margin-bottom: 8px; color: var(--text); }
+  .doc-section h2 { font-size: 20px; margin: 32px 0 12px; color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+  .doc-section h3 { font-size: 16px; margin: 24px 0 8px; color: var(--text); }
+  .doc-section p { margin: 8px 0; color: var(--text2); }
+  .doc-section strong { color: var(--text); }
+  .doc-section a { color: var(--accent); text-decoration: none; }
+  .doc-section a:hover { text-decoration: underline; }
+  .doc-section ul, .doc-section ol { margin: 8px 0 8px 24px; color: var(--text2); }
+  .doc-section li { margin: 4px 0; }
+  .doc-section code { background: var(--surface); color: var(--accent); padding: 2px 6px; border-radius: 4px; font-size: 13px; font-family: 'Cascadia Code', 'Fira Code', monospace; }
+  .doc-section pre { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; overflow-x: auto; margin: 12px 0; font-size: 13px; line-height: 1.5; }
+  .doc-section pre code { background: none; padding: 0; color: var(--text2); }
+  .doc-section blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--accent-bg); border-radius: 0 6px 6px 0; }
+  .doc-section blockquote p { color: var(--text); }
+
+  /* Tables */
+  .doc-section table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+  .doc-section th { text-align: left; padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); color: var(--text); font-weight: 600; }
+  .doc-section td { padding: 8px 12px; border: 1px solid var(--border); color: var(--text2); }
+  .doc-section tr:hover td { background: var(--accent-bg); }
+
+  /* Mermaid */
+  .mermaid { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin: 16px 0; text-align: center; }
+
+  /* Status dots */
+  .status { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+  .status.done { background: var(--green); }
+  .status.todo { background: var(--text2); }
+
+  /* Loading */
+  .loading { text-align: center; padding: 48px; color: var(--text2); }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .main { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <nav class="sidebar" id="sidebar">
+    <h2>📋 QP Notes Spec</h2>
+    <a class="nav-item active" data-doc="readme">README</a>
+    <div class="nav-section">Documents</div>
+    <a class="nav-item" data-doc="01-feature-groups">Feature Groups (F1–F18)</a>
+    <a class="nav-item" data-doc="02-user-scenarios">User Scenarios (GWT)</a>
+    <a class="nav-item" data-doc="03-wireframes">Wireframes</a>
+    <a class="nav-item" data-doc="04-architecture">Architecture & Diagrams</a>
+    <a class="nav-item" data-doc="05-tech-stack">Tech Stack & NFRs</a>
+    <a class="nav-item" data-doc="06-implementation-plan">Implementation Plan</a>
+    <a class="nav-item" data-doc="07-recommendations">Recommendations</a>
+  </nav>
+
+  <main class="main" id="content">
+    <div class="loading" id="loadingMsg">Loading documentation...</div>
+  </main>
+</div>
+
+<!-- Dependencies: markdown-it + mermaid from CDN -->
+<script src="https://cdn.jsdelivr.net/npm/markdown-it@14/dist/markdown-it.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+
+<script>
+(function() {
+  'use strict';
+
+  const DOCS = [
+    'README', '01-feature-groups', '02-user-scenarios', '03-wireframes',
+    '04-architecture', '05-tech-stack', '06-implementation-plan', '07-recommendations'
+  ];
+
+  const cache = {};
+  let activeName = 'readme';
+
+  // Init mermaid
+  mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'strict', fontFamily: 'system-ui, sans-serif' });
+
+  // Init markdown-it
+  const md = markdownit({
+    html: false,
+    linkify: true,
+    typographer: true,
+    breaks: false,
+  });
+
+  // Custom fence rule: render mermaid blocks
+  const defaultFence = md.renderer.rules.fence;
+  md.renderer.rules.fence = function(tokens, idx, options, env, self) {
+    const token = tokens[idx];
+    if (token.info.trim() === 'mermaid') {
+      const id = 'mermaid-' + idx + '-' + Math.random().toString(36).slice(2, 8);
+      return '<div class="mermaid" id="' + id + '">' + md.utils.escapeHtml(token.content) + '</div>';
+    }
+    return defaultFence ? defaultFence(tokens, idx, options, env, self) : self.renderToken(tokens, idx, options);
+  };
+
+  const content = document.getElementById('content');
+  const loadingMsg = document.getElementById('loadingMsg');
+
+  // Fetch and cache a doc
+  async function fetchDoc(name) {
+    if (cache[name]) return cache[name];
+    const filename = name === 'readme' ? 'README.md' : name + '.md';
+    try {
+      const resp = await fetch(filename);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const text = await resp.text();
+      cache[name] = text;
+      return text;
+    } catch (e) {
+      return `# Error\n\nCould not load \`${filename}\`: ${e.message}\n\nMake sure you're serving this from the docs/ directory (e.g. \`npx serve docs/\`).`;
+    }
+  }
+
+  // Render markdown and mermaid
+  async function renderDoc(name) {
+    loadingMsg.style.display = 'block';
+    const markdown = await fetchDoc(name);
+    const html = md.render(markdown);
+
+    // Create or reuse section
+    let section = document.getElementById('doc-' + name);
+    if (!section) {
+      section = document.createElement('div');
+      section.id = 'doc-' + name;
+      section.className = 'doc-section';
+      content.appendChild(section);
+    }
+    section.innerHTML = html;
+
+    // Render mermaid diagrams
+    const mermaidEls = section.querySelectorAll('.mermaid');
+    for (const el of mermaidEls) {
+      try {
+        const { svg } = await mermaid.render(el.id || ('m-' + Math.random().toString(36).slice(2)), el.textContent.trim());
+        el.innerHTML = svg;
+      } catch (err) {
+        el.innerHTML = '<pre style="color:#f85149;font-size:12px;">Mermaid error: ' + (err.message || 'Invalid diagram') + '</pre>';
+      }
+    }
+
+    // Show this section, hide others
+    document.querySelectorAll('.doc-section').forEach(s => s.classList.remove('active'));
+    section.classList.add('active');
+    loadingMsg.style.display = 'none';
+
+    // Scroll to top
+    content.scrollTop = 0;
+  }
+
+  // Sidebar navigation
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', function(e) {
+      e.preventDefault();
+      const name = this.dataset.doc;
+      if (name === activeName) return;
+      activeName = name;
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      this.classList.add('active');
+      renderDoc(name);
+    });
+  });
+
+  // Initial load
+  renderDoc('readme');
+})();
+</script>
+
+</body>
+</html>

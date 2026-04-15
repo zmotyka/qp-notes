@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        window.FontAwesomeConfig = {
+          autoReplaceSvg: 'nest'
+        };
+      </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup - Nexus Notes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        surface: {
+                            50: '#F8FAFC',
+                            100: '#F1F5F9',
+                            200: '#E2E8F0',
+                            300: '#CBD5E1',
+                            400: '#94A3B8',
+                            500: '#64748B',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1E293B',
+                            900: '#0F172A',
+                            950: '#020617',
+                        },
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        },
+                        accent: {
+                            green: '#10B981',
+                            orange: '#F59E0B',
+                            red: '#EF4444',
+                            yellow: '#FBBF24',
+                        }
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+                        'inner-soft': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.02)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { margin: 0; padding: 0; background-color: #E2E8F0; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        .bento-card { background: #FFFFFF; border-radius: 24px; box-shadow: 0 4px 24px -4px rgba(0,0,0,0.05); }
+        .dark .bento-card { background: #1E293B; box-shadow: 0 4px 24px -4px rgba(0,0,0,0.2); }
+        
+        /* Custom toggle switch */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #3b82f6;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #3b82f6;
+        }
+        .toggle-checkbox:checked + .toggle-label:after {
+            transform: translateX(100%);
+            border-color: white;
+        }
+
+        /* Range slider styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            margin-top: -8px;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #CBD5E1;
+            border-radius: 2px;
+        }
+        .dark input[type=range]::-webkit-slider-runnable-track {
+            background: #475569;
+        }
+
+        .theme-card-active {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        .dark .theme-card-active {
+            border-color: #3b82f6;
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+    </style>
+</head>
+<body class="text-surface-800 dark:text-surface-200 antialiased min-h-screen overflow-x-hidden flex flex-col bg-[#E2E8F0] dark:bg-surface-900 transition-colors duration-200 m-0 p-0">
+
+    <!-- Utility Bar (Language & RTL) -->
+    <div id="utility-bar" class="w-full h-10 bg-white/80 dark:bg-surface-800/80 backdrop-blur-md border-b border-surface-200 dark:border-surface-700 flex items-center justify-end px-6 z-20 fixed top-0 left-0">
+        <div class="flex items-center gap-4">
+            <button class="flex items-center gap-2 text-xs font-medium text-surface-500 hover:text-surface-900 dark:hover:text-white transition-colors" title="Toggle Right-to-Left">
+                <i class="fa-solid fa-align-right"></i> RTL
+            </button>
+            <div class="h-4 w-[1px] bg-surface-200 dark:bg-surface-700"></div>
+            <div class="relative group cursor-pointer">
+                <div class="flex items-center gap-2 text-xs font-medium text-surface-500 hover:text-surface-900 dark:hover:text-white transition-colors">
+                    <i class="fa-solid fa-globe"></i> English (US) <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                </div>
+            </div>
+            <div class="h-4 w-[1px] bg-surface-200 dark:bg-surface-700"></div>
+            <button class="text-surface-500 hover:text-surface-900 dark:hover:text-white transition-colors text-sm" title="Toggle Theme" onclick="document.documentElement.classList.toggle('dark')">
+                <i class="fa-regular fa-moon"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col pt-10 relative z-10 w-full max-w-[1440px] mx-auto px-6 pb-24">
+        
+        <!-- Progress Header -->
+        <div class="w-full max-w-4xl mx-auto mt-8 mb-12">
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="text-3xl font-bold text-surface-900 dark:text-white">Customize Your Workspace</h1>
+                <span class="text-sm font-medium text-surface-500 bg-surface-100 dark:bg-surface-800 px-3 py-1 rounded-full">Step 1/2</span>
+            </div>
+            <div class="w-full h-2 bg-surface-200 dark:bg-surface-700 rounded-full overflow-hidden">
+                <div class="h-full bg-brand-500 w-1/2 rounded-full transition-all duration-500"></div>
+            </div>
+            <p class="text-surface-500 mt-4 text-sm">Set up your editor preferences, theme, and accessibility options. You can always change these later in settings.</p>
+        </div>
+
+        <div class="w-full max-w-4xl mx-auto space-y-8">
+            
+            <!-- Theme Selection Grid -->
+            <section class="bento-card p-8">
+                <h2 class="text-xl font-bold text-surface-900 dark:text-white mb-6 flex items-center gap-2">
+                    <i class="fa-solid fa-palette text-brand-500"></i> Visual Theme
+                </h2>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <!-- Theme Card 1 (Active) -->
+                    <div class="border-2 rounded-xl p-4 cursor-pointer transition-all theme-card-active relative overflow-hidden group">
+                        <div class="absolute top-2 right-2 text-brand-500">
+                            <i class="fa-solid fa-circle-check"></i>
+                        </div>
+                        <div class="h-20 rounded-lg bg-surface-50 border border-surface-200 mb-3 flex flex-col gap-2 p-2">
+                            <div class="w-1/2 h-2 bg-surface-300 rounded"></div>
+                            <div class="w-full h-2 bg-brand-200 rounded"></div>
+                            <div class="w-3/4 h-2 bg-surface-200 rounded"></div>
+                        </div>
+                        <p class="text-sm font-medium text-surface-900 dark:text-white text-center">System Default</p>
+                    </div>
+
+                    <!-- Theme Card 2 -->
+                    <div class="border-2 border-surface-200 dark:border-surface-700 rounded-xl p-4 cursor-pointer hover:border-brand-300 transition-all relative overflow-hidden group">
+                        <div class="h-20 rounded-lg bg-white border border-surface-200 mb-3 flex flex-col gap-2 p-2">
+                            <div class="w-1/2 h-2 bg-surface-200 rounded"></div>
+                            <div class="w-full h-2 bg-surface-100 rounded"></div>
+                            <div class="w-3/4 h-2 bg-surface-100 rounded"></div>
+                        </div>
+                        <p class="text-sm font-medium text-surface-900 dark:text-white text-center">Clean Light</p>
+                    </div>
+
+                    <!-- Theme Card 3 -->
+                    <div class="border-2 border-surface-200 dark:border-surface-700 rounded-xl p-4 cursor-pointer hover:border-brand-300 transition-all relative overflow-hidden group">
+                        <div class="h-20 rounded-lg bg-surface-900 border border-surface-700 mb-3 flex flex-col gap-2 p-2">
+                            <div class="w-1/2 h-2 bg-surface-700 rounded"></div>
+                            <div class="w-full h-2 bg-brand-800 rounded"></div>
+                            <div class="w-3/4 h-2 bg-surface-800 rounded"></div>
+                        </div>
+                        <p class="text-sm font-medium text-surface-900 dark:text-white text-center">Midnight Dark</p>
+                    </div>
+
+                    <!-- Theme Card 4 -->
+                    <div class="border-2 border-surface-200 dark:border-surface-700 rounded-xl p-4 cursor-pointer hover:border-brand-300 transition-all relative overflow-hidden group">
+                        <div class="h-20 rounded-lg bg-[#282c34] border border-[#3e4451] mb-3 flex flex-col gap-2 p-2">
+                            <div class="w-1/2 h-2 bg-[#61afef] rounded"></div>
+                            <div class="w-full h-2 bg-[#98c379] rounded"></div>
+                            <div class="w-3/4 h-2 bg-[#e06c75] rounded"></div>
+                        </div>
+                        <p class="text-sm font-medium text-surface-900 dark:text-white text-center">One Dark Pro</p>
+                    </div>
+
+                    <!-- Theme Card 5 -->
+                    <div class="border-2 border-surface-200 dark:border-surface-700 rounded-xl p-4 cursor-pointer hover:border-brand-300 transition-all relative overflow-hidden group">
+                        <div class="h-20 rounded-lg bg-[#fdf6e3] border border-[#eee8d5] mb-3 flex flex-col gap-2 p-2">
+                            <div class="w-1/2 h-2 bg-[#b58900] rounded"></div>
+                            <div class="w-full h-2 bg-[#2aa198] rounded"></div>
+                            <div class="w-3/4 h-2 bg-[#dc322f] rounded"></div>
+                        </div>
+                        <p class="text-sm font-medium text-surface-900 dark:text-white text-center">Solarized Light</p>
+                    </div>
+
+                    <!-- Theme Card 6 -->
+                    <div class="border-2 border-surface-200 dark:border-surface-700 rounded-xl p-4 cursor-pointer hover:border-brand-300 transition-all relative overflow-hidden group">
+                        <div class="h-20 rounded-lg bg-[#292D3E] border border-[#434758] mb-3 flex flex-col gap-2 p-2">
+                            <div class="w-1/2 h-2 bg-[#c792ea] rounded"></div>
+                            <div class="w-full h-2 bg-[#c3e88d] rounded"></div>
+                            <div class="w-3/4 h-2 bg-[#82aaff] rounded"></div>
+                        </div>
+                        <p class="text-sm font-medium text-surface-900 dark:text-white text-center">Material Ocean</p>
+                    </div>
+
+                    <!-- Theme Card 7 -->
+                    <div class="border-2 border-surface-200 dark:border-surface-700 rounded-xl p-4 cursor-pointer hover:border-brand-300 transition-all relative overflow-hidden group">
+                        <div class="h-20 rounded-lg bg-[#1e1e1e] border border-[#333333] mb-3 flex flex-col gap-2 p-2">
+                            <div class="w-1/2 h-2 bg-[#569cd6] rounded"></div>
+                            <div class="w-full h-2 bg-[#ce9178] rounded"></div>
+                            <div class="w-3/4 h-2 bg-[#4ec9b0] rounded"></div>
+                        </div>
+                        <p class="text-sm font-medium text-surface-900 dark:text-white text-center">VS Code High Contrast</p>
+                    </div>
+
+                    <!-- Theme Card 8 -->
+                    <div class="border-2 border-surface-200 dark:border-surface-700 rounded-xl p-4 cursor-pointer hover:border-brand-300 transition-all relative overflow-hidden group">
+                        <div class="h-20 rounded-lg bg-[#fafafa] border border-[#e5e5e5] mb-3 flex flex-col gap-2 p-2">
+                            <div class="w-1/2 h-2 bg-[#000000] rounded"></div>
+                            <div class="w-full h-2 bg-[#666666] rounded"></div>
+                            <div class="w-3/4 h-2 bg-[#999999] rounded"></div>
+                        </div>
+                        <p class="text-sm font-medium text-surface-900 dark:text-white text-center">Minimalist Mono</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Typography & Editor Preferences -->
+            <section class="bento-card p-8">
+                <h2 class="text-xl font-bold text-surface-900 dark:text-white mb-6 flex items-center gap-2">
+                    <i class="fa-solid fa-font text-brand-500"></i> Typography & Editor
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">Editor Font Family</label>
+                            <div class="relative">
+                                <select class="w-full appearance-none bg-surface-50 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-xl py-3 px-4 text-sm text-surface-900 dark:text-white outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all">
+                                    <option value="inter" class="font-sans">Inter (Sans-serif)</option>
+                                    <option value="jetbrains" class="font-mono" selected>JetBrains Mono</option>
+                                    <option value="fira" class="font-mono">Fira Code</option>
+                                    <option value="roboto">Roboto Slab</option>
+                                </select>
+                                <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-surface-400 pointer-events-none text-xs"></i>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="text-sm font-medium text-surface-700 dark:text-surface-300">Base Font Size</label>
+                                <span class="text-sm text-brand-600 dark:text-brand-400 font-medium bg-brand-50 dark:bg-brand-900/30 px-2 py-0.5 rounded">16px</span>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <span class="text-xs text-surface-500">A</span>
+                                <input type="range" min="12" max="24" value="16" class="flex-1">
+                                <span class="text-lg text-surface-500">A</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="text-sm font-medium text-surface-700 dark:text-surface-300">Line Height</label>
+                                <span class="text-sm text-brand-600 dark:text-brand-400 font-medium bg-brand-50 dark:bg-brand-900/30 px-2 py-0.5 rounded">1.6</span>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <i class="fa-solid fa-align-justify text-surface-400 text-sm"></i>
+                                <input type="range" min="1" max="2" step="0.1" value="1.6" class="flex-1">
+                                <i class="fa-solid fa-align-justify text-surface-400 text-lg"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Live Preview -->
+                    <div class="bg-surface-50 dark:bg-surface-800/50 rounded-xl border border-surface-200 dark:border-surface-700 p-6 flex flex-col h-full">
+                        <div class="text-xs font-semibold text-surface-400 uppercase tracking-wider mb-4">Live Preview</div>
+                        <div class="flex-1 bg-white dark:bg-surface-900 rounded-lg border border-surface-200 dark:border-surface-700 p-4 shadow-inner-soft overflow-hidden">
+                            <h3 class="text-lg font-bold text-surface-900 dark:text-white mb-2 font-sans">Project Alpha Notes</h3>
+                            <p class="text-surface-600 dark:text-surface-300 mb-3" style="font-size: 16px; line-height: 1.6;">
+                                The quick brown fox jumps over the lazy dog. This is how your standard text will appear in the editor.
+                            </p>
+                            <pre class="bg-surface-50 dark:bg-surface-800 p-3 rounded-md border border-surface-100 dark:border-surface-700 text-sm overflow-x-hidden"><code class="font-mono text-surface-800 dark:text-surface-200">function init() {
+  console.log("Hello World");
+  return true;
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Accessibility & Controls -->
+            <section class="bento-card p-8">
+                <h2 class="text-xl font-bold text-surface-900 dark:text-white mb-6 flex items-center gap-2">
+                    <i class="fa-solid fa-universal-access text-brand-500"></i> Accessibility & Controls
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    <!-- Toggles Column -->
+                    <div class="space-y-4">
+                        <div class="p-4 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800/30 flex items-start gap-4">
+                            <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in mt-0.5">
+                                <input type="checkbox" name="reduced-motion" id="reduced-motion" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-surface-300 dark:border-surface-600 z-10 transition-transform duration-200 ease-in-out"/>
+                                <label for="reduced-motion" class="toggle-label block overflow-hidden h-5 rounded-full bg-surface-300 dark:bg-surface-600 cursor-pointer transition-colors duration-200 ease-in-out"></label>
+                            </div>
+                            <div class="flex-1">
+                                <label for="reduced-motion" class="text-sm font-semibold text-surface-900 dark:text-white cursor-pointer block mb-1">Reduced Motion</label>
+                                <p class="text-xs text-surface-500 leading-relaxed">Minimize UI animations and transitions throughout the application.</p>
+                            </div>
+                        </div>
+
+                        <div class="p-4 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800/30 flex items-start gap-4">
+                            <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in mt-0.5">
+                                <input type="checkbox" name="high-contrast" id="high-contrast" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-surface-300 dark:border-surface-600 z-10 transition-transform duration-200 ease-in-out"/>
+                                <label for="high-contrast" class="toggle-label block overflow-hidden h-5 rounded-full bg-surface-300 dark:bg-surface-600 cursor-pointer transition-colors duration-200 ease-in-out"></label>
+                            </div>
+                            <div class="flex-1">
+                                <label for="high-contrast" class="text-sm font-semibold text-surface-900 dark:text-white cursor-pointer block mb-1">High Contrast Text</label>
+                                <p class="text-xs text-surface-500 leading-relaxed">Increase contrast ratio for better readability across all themes.</p>
+                            </div>
+                        </div>
+
+                        <div class="p-4 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800/30 flex items-start gap-4">
+                            <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in mt-0.5">
+                                <input type="checkbox" name="screen-reader" id="screen-reader" checked class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-surface-300 dark:border-surface-600 z-10 transition-transform duration-200 ease-in-out"/>
+                                <label for="screen-reader" class="toggle-label block overflow-hidden h-5 rounded-full bg-surface-300 dark:bg-surface-600 cursor-pointer transition-colors duration-200 ease-in-out"></label>
+                            </div>
+                            <div class="flex-1">
+                                <label for="screen-reader" class="text-sm font-semibold text-surface-900 dark:text-white cursor-pointer block mb-1">Screen Reader Hints</label>
+                                <p class="text-xs text-surface-500 leading-relaxed">Enable detailed ARIA labels and structural hints for assistive technologies.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Keyboard Shortcuts Column -->
+                    <div class="space-y-4">
+                        <div class="p-4 rounded-xl border border-brand-200 dark:border-brand-800/50 bg-brand-50 dark:bg-brand-900/20 flex items-start gap-4">
+                            <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in mt-0.5">
+                                <input type="checkbox" name="kb-overlay" id="kb-overlay" checked class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-surface-300 dark:border-surface-600 z-10 transition-transform duration-200 ease-in-out"/>
+                                <label for="kb-overlay" class="toggle-label block overflow-hidden h-5 rounded-full bg-surface-300 dark:bg-surface-600 cursor-pointer transition-colors duration-200 ease-in-out"></label>
+                            </div>
+                            <div class="flex-1">
+                                <label for="kb-overlay" class="text-sm font-semibold text-brand-900 dark:text-brand-100 cursor-pointer block mb-1">Keyboard Shortcuts Cheat Sheet</label>
+                                <p class="text-xs text-brand-700 dark:text-brand-300/80 leading-relaxed">Show a persistent hint overlay for common actions until you dismiss it.</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-surface-50 dark:bg-surface-800/50 rounded-xl border border-surface-200 dark:border-surface-700 p-4">
+                            <h4 class="text-xs font-semibold text-surface-500 uppercase tracking-wider mb-3">Default Keymap</h4>
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-surface-600 dark:text-surface-300">Command Palette</span>
+                                    <div class="flex gap-1">
+                                        <kbd class="px-2 py-1 bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded text-xs font-mono shadow-sm">⌘</kbd>
+                                        <kbd class="px-2 py-1 bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded text-xs font-mono shadow-sm">K</kbd>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-surface-600 dark:text-surface-300">Block Menu</span>
+                                    <div class="flex gap-1">
+                                        <kbd class="px-2 py-1 bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded text-xs font-mono shadow-sm">/</kbd>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-surface-600 dark:text-surface-300">Wiki Link</span>
+                                    <div class="flex gap-1">
+                                        <kbd class="px-2 py-1 bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded text-xs font-mono shadow-sm">[[</kbd>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Default Template Set -->
+            <section class="bento-card p-8">
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-surface-900 dark:text-white flex items-center gap-2">
+                            <i class="fa-solid fa-layer-group text-brand-500"></i> Default Template Set
+                        </h2>
+                        <p class="text-sm text-surface-500 mt-1">Choose a starting template pack to populate your workspace.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="border-2 border-brand-500 bg-brand-50 dark:bg-brand-900/20 rounded-xl p-5 cursor-pointer relative">
+                        <div class="absolute top-3 right-3 text-brand-500">
+                            <i class="fa-solid fa-circle-check"></i>
+                        </div>
+                        <div class="w-10 h-10 rounded-lg bg-brand-100 dark:bg-brand-800 flex items-center justify-center text-brand-600 dark:text-brand-400 mb-3">
+                            <i class="fa-solid fa-briefcase"></i>
+                        </div>
+                        <h3 class="font-semibold text-surface-900 dark:text-white mb-1">Professional</h3>
+                        <p class="text-xs text-surface-600 dark:text-surface-400">Meeting notes, project plans, CRM templates, and daily standups.</p>
+                    </div>
+
+                    <div class="border-2 border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 hover:border-brand-300 rounded-xl p-5 cursor-pointer transition-colors">
+                        <div class="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400 mb-3">
+                            <i class="fa-solid fa-graduation-cap"></i>
+                        </div>
+                        <h3 class="font-semibold text-surface-900 dark:text-white mb-1">Academic</h3>
+                        <p class="text-xs text-surface-600 dark:text-surface-400">Lecture notes, research outlines, bibliography trackers, and study guides.</p>
+                    </div>
+
+                    <div class="border-2 border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 hover:border-brand-300 rounded-xl p-5 cursor-pointer transition-colors">
+                        <div class="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400 mb-3">
+                            <i class="fa-solid fa-pen-nib"></i>
+                        </div>
+                        <h3 class="font-semibold text-surface-900 dark:text-white mb-1">Creative</h3>
+                        <p class="text-xs text-surface-600 dark:text-surface-400">Story boards, character sheets, world-building wikis, and mood boards.</p>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Fixed Bottom Action Bar -->
+    <div class="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-surface-800/90 backdrop-blur-md border-t border-surface-200 dark:border-surface-700 p-4 z-30">
+        <div class="max-w-4xl mx-auto flex items-center justify-between">
+            <button class="px-6 py-2.5 rounded-xl text-surface-600 dark:text-surface-400 font-medium hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors">
+                Back
+            </button>
+            <div class="flex items-center gap-3">
+                <button class="px-6 py-2.5 rounded-xl text-surface-600 dark:text-surface-400 font-medium hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors">
+                    Skip
+                </button>
+                <button class="px-8 py-2.5 rounded-xl bg-surface-900 hover:bg-surface-800 dark:bg-brand-600 dark:hover:bg-brand-500 text-white font-semibold shadow-sm transition-colors flex items-center gap-2">
+                    Next Step <i class="fa-solid fa-arrow-right text-sm"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

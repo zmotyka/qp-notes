@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        window.FontAwesomeConfig = {
+          autoReplaceSvg: 'nest'
+        };
+      </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keyboard Shortcuts Reference - Nexus Notes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        surface: {
+                            50: '#F8FAFC',
+                            100: '#F1F5F9',
+                            200: '#E2E8F0',
+                            300: '#CBD5E1',
+                            400: '#94A3B8',
+                            500: '#64748B',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1E293B',
+                            900: '#0F172A',
+                            950: '#020617',
+                        },
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        },
+                        accent: {
+                            green: '#10B981',
+                            orange: '#F59E0B',
+                            red: '#EF4444',
+                            yellow: '#FBBF24',
+                        }
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+                        'inner-soft': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.02)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { margin: 0; padding: 0; background-color: #E2E8F0; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        
+        /* Component styles inherited from prior HTML */
+        .bento-card { background: #FFFFFF; border-radius: 24px; box-shadow: 0 4px 24px -4px rgba(0,0,0,0.05); }
+        .dark .bento-card { background: #1E293B; box-shadow: 0 4px 24px -4px rgba(0,0,0,0.2); }
+        .bento-inner-card { background: #F8FAFC; border-radius: 16px; padding: 20px; border: 1px solid #E2E8F0; }
+        .dark .bento-inner-card { background: #0F172A; border-color: #334155; }
+        
+        .ref-card { background: #FFFFFF; border-radius: 20px; box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05); border: 1px solid #F1F5F9; }
+        .dark .ref-card { background: #1E293B; border-color: #334155; box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.2); }
+        
+        .ref-input { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; transition: all 0.2s; }
+        .dark .ref-input { background: #0F172A; border-color: #334155; }
+        .ref-input:focus-within { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); }
+        
+        .ref-button-primary { background: #0F172A; color: white; border-radius: 12px; font-weight: 500; transition: all 0.2s; }
+        .dark .ref-button-primary { background: #F8FAFC; color: #0F172A; }
+        .ref-button-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+        
+        .ref-button-secondary { background: #F8FAFC; color: #475569; border: 1px solid #E2E8F0; border-radius: 12px; font-weight: 500; transition: all 0.2s; }
+        .dark .ref-button-secondary { background: #0F172A; color: #CBD5E1; border-color: #334155; }
+        .ref-button-secondary:hover { background: #F1F5F9; }
+        .dark .ref-button-secondary:hover { background: #1E293B; }
+
+        .ref-badge-green { background: rgba(16, 185, 129, 0.1); color: #10B981; border-radius: 8px; padding: 4px 8px; font-size: 12px; font-weight: 500; }
+        .ref-badge-red { background: rgba(239, 68, 68, 0.1); color: #EF4444; border-radius: 8px; padding: 4px 8px; font-size: 12px; font-weight: 500; }
+        .ref-badge-gray { background: #F1F5F9; color: #64748B; border-radius: 8px; padding: 4px 8px; font-size: 12px; font-weight: 500; }
+        .dark .ref-badge-gray { background: #334155; color: #94A3B8; }
+
+        /* Settings specific styles inspired by references */
+        .settings-nav-item { border-radius: 8px; padding: 8px 12px; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 12px; color: #475569; transition: all 0.2s; }
+        .dark .settings-nav-item { color: #94A3B8; }
+        .settings-nav-item:hover { background: #F1F5F9; color: #0F172A; }
+        .dark .settings-nav-item:hover { background: #334155; color: #F8FAFC; }
+        .settings-nav-item.active { background: #F1F5F9; color: #0F172A; }
+        .dark .settings-nav-item.active { background: #334155; color: #F8FAFC; }
+
+        /* Shortcut Specific Styles */
+        .kbd-key { 
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 28px;
+            height: 28px;
+            padding: 0 8px;
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-bottom-width: 2px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            font-weight: 600;
+            color: #475569;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .dark .kbd-key {
+            background: #1E293B;
+            border-color: #334155;
+            color: #CBD5E1;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+        .kbd-row {
+            transition: all 0.2s;
+            border-bottom: 1px solid #F1F5F9;
+        }
+        .dark .kbd-row {
+            border-bottom-color: #334155;
+        }
+        .kbd-row:hover {
+            background-color: #F8FAFC;
+        }
+        .dark .kbd-row:hover {
+            background-color: #1E293B;
+        }
+        .kbd-row:last-child {
+            border-bottom: none;
+        }
+        .conflict-row {
+            background-color: rgba(239, 68, 68, 0.05);
+        }
+        .dark .conflict-row {
+            background-color: rgba(239, 68, 68, 0.1);
+        }
+        .conflict-row:hover {
+            background-color: rgba(239, 68, 68, 0.1);
+        }
+        .dark .conflict-row:hover {
+            background-color: rgba(239, 68, 68, 0.15);
+        }
+    </style>
+</head>
+<body class="text-surface-800 dark:text-surface-200 antialiased h-screen overflow-hidden flex bg-[#E2E8F0] dark:bg-surface-900 transition-colors duration-200 m-0 p-0">
+
+    <!-- Left Sidebar: Navigation & Notes List -->
+    <aside id="left-sidebar" class="w-[320px] h-full flex-shrink-0 flex flex-col border-r border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 z-20 transition-all duration-300 relative hidden md:flex">
+        <div class="p-6 flex items-center justify-between border-b border-surface-100 dark:border-surface-700">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-brand-500 text-white flex items-center justify-center font-bold text-lg shadow-soft">
+                    N
+                </div>
+                <span class="font-semibold text-lg tracking-tight">Nexus Notes</span>
+            </div>
+            <button class="text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 transition-colors xl:hidden">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-4 space-y-6">
+            <!-- System Navigation -->
+            <div>
+                <nav class="space-y-1">
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-colors">
+                        <i class="fa-solid fa-house w-5 text-center"></i>
+                        <span class="text-sm font-medium">Note Editor Dashboard</span>
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-colors">
+                        <i class="fa-solid fa-shapes w-5 text-center"></i>
+                        <span class="text-sm font-medium">Templates & Snippets</span>
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-colors">
+                        <i class="fa-solid fa-clock-rotate-left w-5 text-center"></i>
+                        <span class="text-sm font-medium">Version History</span>
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-colors">
+                        <i class="fa-solid fa-file-zipper w-5 text-center"></i>
+                        <span class="text-sm font-medium">Backup & Restore</span>
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 font-medium">
+                        <i class="fa-solid fa-shield-halved w-5 text-center"></i>
+                        <span class="text-sm font-medium">Settings & Security</span>
+                    </a>
+                </nav>
+            </div>
+        </div>
+
+        <div class="p-4 border-t border-surface-100 dark:border-surface-700">
+            <div class="flex items-center gap-3">
+                <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-4.jpg" alt="User" class="w-10 h-10 rounded-full border-2 border-white dark:border-surface-800 shadow-sm">
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-surface-900 dark:text-white truncate">Alex Morgan</p>
+                    <p class="text-xs text-surface-500 truncate">Product Manager</p>
+                </div>
+                <button class="text-surface-400 hover:text-surface-600 transition-colors">
+                    <i class="fa-solid fa-gear"></i>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Center: Main Content -->
+    <main class="flex-1 flex flex-col h-full relative bg-[#F8FAFC] dark:bg-[#0F172A] z-10 overflow-hidden">
+        
+        <!-- Header -->
+        <header class="h-16 flex-shrink-0 border-b border-surface-200 dark:border-surface-700 flex items-center justify-between px-8 bg-white dark:bg-surface-800 z-10">
+            <div class="flex items-center gap-4">
+                <button class="md:hidden text-surface-500 hover:text-surface-900 dark:hover:text-white">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <h1 class="text-xl font-semibold text-surface-900 dark:text-white tracking-tight">Settings & Security</h1>
+                <i class="fa-solid fa-chevron-right text-[10px] text-surface-400 mx-2 hidden sm:block"></i>
+                <span class="text-sm font-medium text-surface-500 hidden sm:block">Keyboard Shortcuts</span>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <button class="ref-button-secondary px-4 py-2 text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-rotate-left"></i> <span class="hidden sm:inline">Reset Defaults</span>
+                </button>
+                <button class="ref-button-primary px-4 py-2 text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-check"></i> <span class="hidden sm:inline">Save Changes</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="p-4 md:p-8 max-w-7xl mx-auto w-full flex flex-col md:flex-row gap-8 h-[calc(100vh-64px)] overflow-hidden">
+            
+            <!-- Settings Sub-Navigation -->
+            <div class="w-full md:w-64 flex-shrink-0 hidden md:block overflow-y-auto">
+                <div class="ref-card p-4 h-full bg-white/50 dark:bg-surface-800/50 backdrop-blur-sm">
+                    <h3 class="text-xs font-semibold text-surface-400 uppercase tracking-wider mb-4 px-3">Configuration</h3>
+                    <nav class="space-y-1">
+                        <a href="#" class="settings-nav-item">
+                            <i class="fa-solid fa-palette w-4 text-center"></i> Appearance
+                        </a>
+                        <a href="#" class="settings-nav-item">
+                            <i class="fa-solid fa-pen-to-square w-4 text-center"></i> Editor
+                        </a>
+                        <a href="#" class="settings-nav-item">
+                            <i class="fa-solid fa-gauge-high w-4 text-center"></i> Performance
+                        </a>
+                        <a href="#" class="settings-nav-item active">
+                            <i class="fa-regular fa-keyboard w-4 text-center"></i> Shortcuts
+                        </a>
+                    </nav>
+
+                    <h3 class="text-xs font-semibold text-surface-400 uppercase tracking-wider mb-4 px-3 mt-8">System</h3>
+                    <nav class="space-y-1">
+                        <a href="#" class="settings-nav-item">
+                            <i class="fa-solid fa-shield-halved w-4 text-center"></i> Security & Lock
+                        </a>
+                        <a href="#" class="settings-nav-item">
+                            <i class="fa-solid fa-universal-access w-4 text-center"></i> Accessibility
+                        </a>
+                        <a href="#" class="settings-nav-item">
+                            <i class="fa-brands fa-chrome w-4 text-center"></i> PWA & Storage
+                        </a>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Settings Content Area - Keyboard Shortcuts -->
+            <div class="flex-1 flex flex-col overflow-hidden h-full">
+                
+                <!-- Search and Categories Header -->
+                <div class="mb-6 flex-shrink-0 space-y-4">
+                    <div>
+                        <h2 class="text-2xl font-semibold text-surface-900 dark:text-white mb-2">Keyboard Shortcuts</h2>
+                        <p class="text-sm text-surface-500">Master the editor with customizable key bindings. Click any shortcut to remap.</p>
+                    </div>
+
+                    <!-- Search Bar -->
+                    <div class="relative ref-input">
+                        <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-surface-400"></i>
+                        <input type="text" placeholder="Search commands or shortcuts..." class="w-full pl-11 pr-4 py-3 bg-transparent border-none rounded-xl text-sm focus:ring-0 outline-none text-surface-900 dark:text-white">
+                        <div class="absolute right-4 top-1/2 -translate-y-1/2 flex gap-1">
+                            <span class="kbd-key">⌘</span>
+                            <span class="kbd-key">K</span>
+                        </div>
+                    </div>
+
+                    <!-- Category Filters -->
+                    <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                        <button class="px-4 py-2 rounded-lg bg-surface-900 text-white dark:bg-white dark:text-surface-900 text-sm font-medium whitespace-nowrap transition-colors">
+                            All Shortcuts
+                        </button>
+                        <button class="px-4 py-2 rounded-lg bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-300 border border-surface-200 dark:border-surface-700 hover:bg-surface-50 dark:hover:bg-surface-700 text-sm font-medium whitespace-nowrap transition-colors">
+                            Editor & Formatting
+                        </button>
+                        <button class="px-4 py-2 rounded-lg bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-300 border border-surface-200 dark:border-surface-700 hover:bg-surface-50 dark:hover:bg-surface-700 text-sm font-medium whitespace-nowrap transition-colors">
+                            Navigation
+                        </button>
+                        <button class="px-4 py-2 rounded-lg bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-300 border border-surface-200 dark:border-surface-700 hover:bg-surface-50 dark:hover:bg-surface-700 text-sm font-medium whitespace-nowrap transition-colors">
+                            Templates
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Shortcuts List Area -->
+                <div class="flex-1 overflow-y-auto pr-2 pb-20 scroll-smooth space-y-8">
+                    
+                    <!-- Category: Editor & Formatting -->
+                    <section class="ref-card overflow-hidden">
+                        <div class="px-6 py-4 border-b border-surface-100 dark:border-surface-700 bg-surface-50/50 dark:bg-surface-800/50">
+                            <h3 class="font-semibold text-surface-900 dark:text-white flex items-center gap-2">
+                                <i class="fa-solid fa-pen-to-square text-brand-500"></i> Editor & Formatting
+                            </h3>
+                        </div>
+                        <div class="flex flex-col">
+                            <!-- Row 1 -->
+                            <div class="kbd-row px-6 py-4 flex items-center justify-between group cursor-pointer">
+                                <div class="flex items-center gap-4">
+                                    <div class="flex-1">
+                                        <div class="text-sm font-medium text-surface-900 dark:text-white">Bold Text</div>
+                                        <div class="text-xs text-surface-500 mt-0.5">Toggle strong styling on selection</div>
+                                    </div>
+                                </div>
+                                <div class="flex gap-1.5 items-center">
+                                    <span class="kbd-key group-hover:border-brand-300 transition-colors">⌘</span>
+                                    <span class="kbd-key group-hover:border-brand-300 transition-colors">B</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Row 2 -->
+                            <div class="kbd-row px-6 py-4 flex items-center justify-between group cursor-pointer">
+                                <div class="flex items-center gap-4">
+                                    <div class="flex-1">
+                                        <div class="text-sm font-medium text-surface-900 dark:text-white">Italic Text</div>
+                                        <div class="text-xs text-surface-500 mt-0.5">Toggle emphasis styling on selection</div>
+                                    </div>
+                                </div>
+                                <div class="flex gap-1.5 items-center">
+                                    <span class="kbd-key group-hover:border-brand-300 transition-colors">⌘</span>
+                                    <span class="kbd-key group-hover:border-brand-300 transition-colors">I</span>
+                                </div>
+                            </div>
+
+                            <!-- Row 3 - Conflict Example -->
+                            <div class="kbd-row conflict-row px-6 py-4 flex items-center justify-between group cursor-pointer">
+                                <div class="flex items-center gap-4">
+                                    <div class="flex-1">
+                                        <div class="flex items-center gap-2">
+                                            <div class="text-sm font-medium text-surface-900 dark:text-white">Create Checkbox</div>
+                                            <span class="ref-badge-red text-[10px] py-0.5 px-2 flex items-center gap-1">
+                                                <i class="fa-solid fa-triangle-exclamation"></i> Conflict Detected
+                                            </span>
+                                        </div>
+                                        <div class="text-xs text-surface-500 mt-0.5">Insert a task list item</div>
+                                    </div>
+                                </div>
+                                <div class="flex gap-1.5 items-center">
+                                    <span class="kbd-key !border-red-300 !text-red-600 dark:!text-red-400">⌘</span>
+                                    <span class="kbd-key !border-red-300 !text-red-600 dark:!text-red-400">⇧</span>
+                                    <span class="kbd-key !border-red-300 !text-red-600 dark:!text-red-400">C</span>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Category: Navigation & UI -->
+                    <section class="ref-card overflow-hidden">
+                        <div class="px-6 py-4 border-b border-surface-100 dark:border-surface-700 bg-surface-50/50 dark:bg-surface-800/50">
+                            <h3 class="font-semibold text-surface-900 dark:text-white flex items-center gap-2">
+                                <i class="fa-solid fa-compass text-purple-500"></i> Navigation & UI
+                            </h3>
+                        </div>
+                        <div class="flex flex-col">
+                            <!-- Row 1 -->
+                            <div class="kbd-row px-6 py-4 flex items-center justify-between group cursor-pointer">
+                                <div class="flex items-center gap-4">
+                                    <div class="flex-1">
+                                        <div class="text-sm font-medium text-surface-900 dark:text-white">Command Palette</div>
+                                        <div class="text-xs text-surface-500 mt-0.5">Open global search and command runner</div>
+                                    </div>
+                                </div>
+                                <div class="flex gap-1.5 items-center">
+                                    <span class="kbd-key group-hover:border-brand-300 transition-colors">⌘</span>
+                                    <span class="kbd-key group-hover:border-brand-300 transition-colors">K</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Row 2 -->
+                            <div class="kbd-row px-6 py-4 flex items-center justify-between group cursor-pointer">
+                                <div class="flex items-center gap-4">
+                                    <div class="flex-1">
+                                        <div class="text-sm font-medium text-surface-900 dark:text-white">Toggle Sidebar</div>
+                                        <div class="text-xs text-surface-500 mt-0.5">Show or hide the left navigation panel</div>
+                                    </div>
+                                </div>
+                                <div class="flex gap-1.5 items-center">
+                                    <span class="kbd-key group-hover:border-brand-300 transition-colors">⌘</span>
+                                    <span class="kbd-key group-hover:border-brand-300 transition-colors">\</span>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                </div>
+            </div>
+        </div>
+    </main>
+
+</body>
+</html>

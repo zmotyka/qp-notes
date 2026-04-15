@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        window.FontAwesomeConfig = {
+          autoReplaceSvg: 'nest'
+        };
+      </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup - Nexus Notes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        surface: {
+                            50: '#F8FAFC',
+                            100: '#F1F5F9',
+                            200: '#E2E8F0',
+                            300: '#CBD5E1',
+                            400: '#94A3B8',
+                            500: '#64748B',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1E293B',
+                            900: '#0F172A',
+                            950: '#020617',
+                        },
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        },
+                        accent: {
+                            green: '#10B981',
+                            orange: '#F59E0B',
+                            red: '#EF4444',
+                            yellow: '#FBBF24',
+                        }
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+                        'inner-soft': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.02)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { margin: 0; padding: 0; background-color: #E2E8F0; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        .bento-card { background: #FFFFFF; border-radius: 24px; box-shadow: 0 4px 24px -4px rgba(0,0,0,0.05); }
+        .dark .bento-card { background: #1E293B; box-shadow: 0 4px 24px -4px rgba(0,0,0,0.2); }
+        
+        /* Custom toggle switch */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #3b82f6;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #3b82f6;
+        }
+        .toggle-checkbox:checked + .toggle-label:after {
+            transform: translateX(100%);
+            border-color: white;
+        }
+
+        /* Range slider styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            margin-top: -8px;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #CBD5E1;
+            border-radius: 2px;
+        }
+        .dark input[type=range]::-webkit-slider-runnable-track {
+            background: #475569;
+        }
+
+        .theme-card-active {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        .dark .theme-card-active {
+            border-color: #3b82f6;
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+    </style>
+</head>
+<body class="text-surface-800 dark:text-surface-200 antialiased min-h-screen overflow-x-hidden flex flex-col bg-[#E2E8F0] dark:bg-surface-900 transition-colors duration-200 m-0 p-0">
+
+    <!-- Utility Bar (Language & RTL) -->
+    <div id="utility-bar" class="w-full h-10 bg-white/80 dark:bg-surface-800/80 backdrop-blur-md border-b border-surface-200 dark:border-surface-700 flex items-center justify-end px-6 z-20 fixed top-0 left-0">
+        <div class="flex items-center gap-4">
+            <button class="flex items-center gap-2 text-xs font-medium text-surface-500 hover:text-surface-900 dark:hover:text-white transition-colors" title="Toggle Right-to-Left">
+                <i class="fa-solid fa-align-right"></i> RTL
+            </button>
+            <div class="h-4 w-[1px] bg-surface-200 dark:bg-surface-700"></div>
+            <div class="relative group cursor-pointer">
+                <div class="flex items-center gap-2 text-xs font-medium text-surface-500 hover:text-surface-900 dark:hover:text-white transition-colors">
+                    <i class="fa-solid fa-globe"></i> English (US) <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                </div>
+            </div>
+            <div class="h-4 w-[1px] bg-surface-200 dark:bg-surface-700"></div>
+            <button class="text-surface-500 hover:text-surface-900 dark:hover:text-white transition-colors text-sm" title="Toggle Theme" onclick="document.documentElement.classList.toggle('dark')">
+                <i class="fa-regular fa-moon"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col pt-10 relative z-10 w-full max-w-[1440px] mx-auto px-6 pb-24">
+        
+        <!-- Progress Header -->
+        <div class="w-full max-w-4xl mx-auto mt-8 mb-12">
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="text-3xl font-bold text-surface-900 dark:text-white">Configure Security Hardening</h1>
+                <span class="text-sm font-medium text-surface-500 bg-surface-100 dark:bg-surface-800 px-3 py-1 rounded-full">Step 2/2</span>
+            </div>
+            <div class="w-full h-2 bg-surface-200 dark:bg-surface-700 rounded-full overflow-hidden">
+                <div class="h-full bg-brand-500 w-full rounded-full transition-all duration-500"></div>
+            </div>
+            <p class="text-surface-500 mt-4 text-sm">Protect your notes with advanced security features like passcode, biometrics, and auto-lock.</p>
+        </div>
+
+        <div class="w-full max-w-4xl mx-auto space-y-8">
+            
+            <!-- Passcode & Biometrics -->
+            <section class="bento-card p-8">
+                <h2 class="text-xl font-bold text-surface-900 dark:text-white mb-6 flex items-center gap-2">
+                    <i class="fa-solid fa-lock text-brand-500"></i> Authentication
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="space-y-6">
+                        <div class="p-4 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800/30 flex items-start gap-4">
+                            <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in mt-0.5">
+                                <input type="checkbox" name="app-passcode" id="app-passcode" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-surface-300 dark:border-surface-600 z-10 transition-transform duration-200 ease-in-out"/>
+                                <label for="app-passcode" class="toggle-label block overflow-hidden h-5 rounded-full bg-surface-300 dark:bg-surface-600 cursor-pointer transition-colors duration-200 ease-in-out"></label>
+                            </div>
+                            <div class="flex-1">
+                                <label for="app-passcode" class="text-sm font-semibold text-surface-900 dark:text-white cursor-pointer block mb-1">Require App Passcode</label>
+                                <p class="text-xs text-surface-500 leading-relaxed">Prompt for a 6-digit PIN when opening or resuming the application.</p>
+                            </div>
+                        </div>
+
+                        <div class="p-4 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800/30 flex items-start gap-4">
+                            <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in mt-0.5">
+                                <input type="checkbox" name="biometric-lock" id="biometric-lock" checked class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-surface-300 dark:border-surface-600 z-10 transition-transform duration-200 ease-in-out"/>
+                                <label for="biometric-lock" class="toggle-label block overflow-hidden h-5 rounded-full bg-surface-300 dark:bg-surface-600 cursor-pointer transition-colors duration-200 ease-in-out"></label>
+                            </div>
+                            <div class="flex-1">
+                                <label for="biometric-lock" class="text-sm font-semibold text-surface-900 dark:text-white cursor-pointer block mb-1">Enable Biometrics</label>
+                                <p class="text-xs text-surface-500 leading-relaxed">Use Touch ID, Face ID, or Windows Hello if available on your device.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-surface-50 dark:bg-surface-800/50 rounded-xl border border-surface-200 dark:border-surface-700 p-6 flex flex-col justify-center items-center h-full text-center">
+                        <div class="w-16 h-16 rounded-full bg-brand-50 dark:bg-brand-900/30 flex items-center justify-center text-brand-500 mb-4">
+                            <i class="fa-solid fa-fingerprint text-3xl"></i>
+                        </div>
+                        <h3 class="text-sm font-semibold text-surface-900 dark:text-white mb-2">Biometric Status</h3>
+                        <p class="text-xs text-surface-500">Your device supports Touch ID. We recommend enabling it for faster, secure access.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Auto-Lock Timer -->
+            <section class="bento-card p-8">
+                <h2 class="text-xl font-bold text-surface-900 dark:text-white mb-6 flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left text-brand-500"></i> Auto-Lock Timer
+                </h2>
+                
+                <div class="space-y-6">
+                    <p class="text-sm text-surface-600 dark:text-surface-400">Automatically lock the application after a period of inactivity.</p>
+                    
+                    <div class="relative pt-4 pb-8">
+                        <div class="flex justify-between text-xs text-surface-500 mb-2 px-1">
+                            <span>Immediately</span>
+                            <span>1 Min</span>
+                            <span>5 Mins</span>
+                            <span>15 Mins</span>
+                            <span>Never</span>
+                        </div>
+                        <input type="range" min="0" max="4" value="2" step="1" class="w-full">
+                        <div class="text-center mt-4">
+                            <span class="text-sm font-medium text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/30 px-3 py-1 rounded-full">Current: 5 Minutes</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Privacy Toggles -->
+            <section class="bento-card p-8">
+                <h2 class="text-xl font-bold text-surface-900 dark:text-white mb-6 flex items-center gap-2">
+                    <i class="fa-solid fa-shield-halved text-brand-500"></i> Privacy Protection
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="p-4 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800/30 flex items-start gap-4">
+                        <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in mt-0.5">
+                            <input type="checkbox" name="clipboard-protection" id="clipboard-protection" checked class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-surface-300 dark:border-surface-600 z-10 transition-transform duration-200 ease-in-out"/>
+                            <label for="clipboard-protection" class="toggle-label block overflow-hidden h-5 rounded-full bg-surface-300 dark:bg-surface-600 cursor-pointer transition-colors duration-200 ease-in-out"></label>
+                        </div>
+                        <div class="flex-1">
+                            <label for="clipboard-protection" class="text-sm font-semibold text-surface-900 dark:text-white cursor-pointer block mb-1">Clipboard Protection</label>
+                            <p class="text-xs text-surface-500 leading-relaxed">Clear clipboard contents automatically after 60 seconds of copying from notes.</p>
+                        </div>
+                    </div>
+
+                    <div class="p-4 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800/30 flex items-start gap-4">
+                        <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in mt-0.5">
+                            <input type="checkbox" name="preview-protection" id="preview-protection" checked class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-surface-300 dark:border-surface-600 z-10 transition-transform duration-200 ease-in-out"/>
+                            <label for="preview-protection" class="toggle-label block overflow-hidden h-5 rounded-full bg-surface-300 dark:bg-surface-600 cursor-pointer transition-colors duration-200 ease-in-out"></label>
+                        </div>
+                        <div class="flex-1">
+                            <label for="preview-protection" class="text-sm font-semibold text-surface-900 dark:text-white cursor-pointer block mb-1">Blur App Previews</label>
+                            <p class="text-xs text-surface-500 leading-relaxed">Obscure the app window when switching tasks or minimizing.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Recovery Options -->
+            <section class="bento-card p-8">
+                <h2 class="text-xl font-bold text-surface-900 dark:text-white mb-6 flex items-center gap-2">
+                    <i class="fa-solid fa-key text-brand-500"></i> Recovery Options
+                </h2>
+                
+                <div class="space-y-6">
+                    <p class="text-sm text-surface-600 dark:text-surface-400">Set up a recovery method in case you forget your passcode.</p>
+                    
+                    <div class="p-5 border border-surface-200 dark:border-surface-700 rounded-xl bg-surface-50 dark:bg-surface-800/50 flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-lg bg-surface-200 dark:bg-surface-700 flex items-center justify-center text-surface-600 dark:text-surface-300">
+                                <i class="fa-solid fa-envelope"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-semibold text-surface-900 dark:text-white">Recovery Email</h4>
+                                <p class="text-xs text-surface-500">Not configured</p>
+                            </div>
+                        </div>
+                        <button class="px-4 py-2 bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg text-sm font-medium hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors shadow-sm">
+                            Setup
+                        </button>
+                    </div>
+
+                    <div class="p-5 border border-brand-200 dark:border-brand-800/50 rounded-xl bg-brand-50 dark:bg-brand-900/20 flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-lg bg-brand-100 dark:bg-brand-800 flex items-center justify-center text-brand-600 dark:text-brand-400">
+                                <i class="fa-solid fa-file-shield"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-semibold text-brand-900 dark:text-brand-100">Recovery Phrase</h4>
+                                <p class="text-xs text-brand-700 dark:text-brand-300/80">Generate a 12-word recovery phrase</p>
+                            </div>
+                        </div>
+                        <button class="px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
+                            Generate
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Fixed Bottom Action Bar -->
+    <div class="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-surface-800/90 backdrop-blur-md border-t border-surface-200 dark:border-surface-700 p-4 z-30">
+        <div class="max-w-4xl mx-auto flex items-center justify-between">
+            <button class="px-6 py-2.5 rounded-xl text-surface-600 dark:text-surface-400 font-medium hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors">
+                Back
+            </button>
+            <div class="flex items-center gap-3">
+                <button class="px-6 py-2.5 rounded-xl text-surface-600 dark:text-surface-400 font-medium hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors">
+                    Skip
+                </button>
+                <button class="px-8 py-2.5 rounded-xl bg-surface-900 hover:bg-surface-800 dark:bg-brand-600 dark:hover:bg-brand-500 text-white font-semibold shadow-sm transition-colors flex items-center gap-2">
+                    Complete Setup <i class="fa-solid fa-check text-sm"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

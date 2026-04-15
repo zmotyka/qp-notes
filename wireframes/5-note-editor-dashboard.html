@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        window.FontAwesomeConfig = {
+          autoReplaceSvg: 'nest'
+        };
+      </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Note Editor Dashboard - Nexus Notes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        surface: {
+                            50: '#F8FAFC',
+                            100: '#F1F5F9',
+                            200: '#E2E8F0',
+                            300: '#CBD5E1',
+                            400: '#94A3B8',
+                            500: '#64748B',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1E293B',
+                            900: '#0F172A',
+                            950: '#020617',
+                        },
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        },
+                        accent: {
+                            green: '#10B981',
+                            orange: '#F59E0B',
+                            red: '#EF4444',
+                            yellow: '#FBBF24',
+                        }
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+                        'inner-soft': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.02)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { margin: 0; padding: 0; background-color: #E2E8F0; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        .bento-card { background: #FFFFFF; border-radius: 24px; box-shadow: 0 4px 24px -4px rgba(0,0,0,0.05); }
+        .dark .bento-card { background: #1E293B; box-shadow: 0 4px 24px -4px rgba(0,0,0,0.2); }
+        .bento-inner-card { background: #F8FAFC; border-radius: 16px; padding: 20px; border: 1px solid #E2E8F0; }
+        .dark .bento-inner-card { background: #0F172A; border-color: #334155; }
+        
+        /* Custom Editor Styles */
+        .editor-content { min-height: calc(100vh - 200px); outline: none; }
+        .wiki-link { color: #3b82f6; background: rgba(59, 130, 246, 0.1); padding: 2px 6px; border-radius: 4px; font-weight: 500; transition: all 0.2s; cursor: pointer; }
+        .wiki-link:hover { background: rgba(59, 130, 246, 0.2); text-decoration: underline; }
+        .code-block { font-family: 'JetBrains Mono', monospace; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; font-size: 14px; overflow-x: auto; }
+        .dark .code-block { background: #0F172A; border-color: #334155; color: #E2E8F0; }
+        .line-number { color: #94A3B8; user-select: none; text-align: right; padding-right: 16px; width: 40px; display: inline-block; }
+        .dark .line-number { color: #475569; }
+        .editor-line { display: flex; align-items: flex-start; }
+        .editor-line:hover { background: rgba(0,0,0,0.02); }
+        .dark .editor-line:hover { background: rgba(255,255,255,0.02); }
+    </style>
+</head>
+<body class="text-surface-800 dark:text-surface-200 antialiased h-screen overflow-hidden flex bg-[#E2E8F0] dark:bg-surface-900 transition-colors duration-200 m-0 p-0">
+
+    <!-- Left Sidebar: Navigation & Notes List -->
+    <aside id="left-sidebar" class="w-[320px] h-full flex-shrink-0 flex flex-col border-r border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 z-20 transition-all duration-300 relative">
+        <div class="p-6 flex items-center justify-between border-b border-surface-100 dark:border-surface-700">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-brand-500 text-white flex items-center justify-center font-bold text-lg shadow-soft">
+                    N
+                </div>
+                <span class="font-semibold text-lg tracking-tight">Nexus Notes</span>
+            </div>
+            <button class="text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 transition-colors xl:hidden">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <div class="p-4 border-b border-surface-100 dark:border-surface-700">
+            <div class="relative">
+                <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-surface-400 text-sm"></i>
+                <input type="text" placeholder="Search notes... (⌘K)" class="w-full pl-9 pr-4 py-2 bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none transition-all">
+            </div>
+            <div class="flex gap-2 mt-3 overflow-x-auto pb-1 hide-scrollbar">
+                <button class="px-3 py-1 bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 text-xs font-medium rounded-full border border-brand-200 dark:border-brand-800/50 whitespace-nowrap">All Notes</button>
+                <button class="px-3 py-1 bg-surface-50 dark:bg-surface-900 text-surface-600 dark:text-surface-400 text-xs font-medium rounded-full border border-surface-200 dark:border-surface-700 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors whitespace-nowrap">Recent</button>
+                <button class="px-3 py-1 bg-surface-50 dark:bg-surface-900 text-surface-600 dark:text-surface-400 text-xs font-medium rounded-full border border-surface-200 dark:border-surface-700 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors whitespace-nowrap">Favorites</button>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-4 space-y-6">
+            <!-- Pinned Notes -->
+            <div>
+                <h3 class="text-xs font-semibold text-surface-400 uppercase tracking-wider mb-2 px-2 flex items-center gap-2">
+                    <i class="fa-solid fa-thumbtack text-[10px]"></i> Pinned
+                </h3>
+                <div class="space-y-1">
+                    <a href="#" class="block p-3 rounded-xl bg-brand-50 dark:bg-brand-900/10 border border-brand-100 dark:border-brand-800/30 hover:shadow-sm transition-all group">
+                        <div class="flex justify-between items-start mb-1">
+                            <h4 class="text-sm font-semibold text-brand-900 dark:text-brand-100 truncate pr-4">Q3 Architecture Review</h4>
+                            <span class="text-[10px] text-surface-400 whitespace-nowrap mt-0.5">2h ago</span>
+                        </div>
+                        <p class="text-xs text-surface-500 line-clamp-1">Notes from the engineering sync regarding the new microservices...</p>
+                        <div class="flex gap-1 mt-2">
+                            <span class="px-1.5 py-0.5 rounded text-[10px] bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300">#engineering</span>
+                            <span class="px-1.5 py-0.5 rounded text-[10px] bg-surface-200 dark:bg-surface-700 text-surface-700 dark:text-surface-300">#q3</span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <!-- All Notes -->
+            <div>
+                <h3 class="text-xs font-semibold text-surface-400 uppercase tracking-wider mb-2 px-2">Folders</h3>
+                <div class="space-y-1">
+                    <div class="group">
+                        <button class="w-full flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-surface-50 dark:hover:bg-surface-700/50 text-surface-700 dark:text-surface-300 transition-colors">
+                            <div class="flex items-center gap-2 text-sm font-medium">
+                                <i class="fa-regular fa-folder text-surface-400"></i>
+                                Personal
+                            </div>
+                            <i class="fa-solid fa-chevron-right text-[10px] text-surface-300 group-hover:text-surface-500"></i>
+                        </button>
+                    </div>
+                    <div class="group">
+                        <button class="w-full flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-surface-50 dark:hover:bg-surface-700/50 text-surface-700 dark:text-surface-300 transition-colors">
+                            <div class="flex items-center gap-2 text-sm font-medium">
+                                <i class="fa-regular fa-folder-open text-brand-500"></i>
+                                Work Projects
+                            </div>
+                            <i class="fa-solid fa-chevron-down text-[10px] text-surface-400"></i>
+                        </button>
+                        <div class="pl-6 pr-2 mt-1 space-y-1">
+                            <a href="#" class="block px-2 py-1.5 rounded-lg bg-surface-100 dark:bg-surface-700 text-sm font-medium text-surface-900 dark:text-white border-l-2 border-brand-500">
+                                Dashboard Redesign
+                            </a>
+                            <a href="#" class="block px-2 py-1.5 rounded-lg hover:bg-surface-50 dark:hover:bg-surface-700/50 text-sm text-surface-600 dark:text-surface-400 transition-colors">
+                                API Documentation
+                            </a>
+                            <a href="#" class="block px-2 py-1.5 rounded-lg hover:bg-surface-50 dark:hover:bg-surface-700/50 text-sm text-surface-600 dark:text-surface-400 transition-colors">
+                                Meeting Minutes
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- System Navigation -->
+            <div class="pt-4 border-t border-surface-100 dark:border-surface-700">
+                <nav class="space-y-1">
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-colors">
+                        <i class="fa-solid fa-shapes w-5 text-center"></i>
+                        <span class="text-sm font-medium">Templates & Snippets</span>
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-colors">
+                        <i class="fa-solid fa-clock-rotate-left w-5 text-center"></i>
+                        <span class="text-sm font-medium">Version History</span>
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-colors">
+                        <i class="fa-solid fa-file-zipper w-5 text-center"></i>
+                        <span class="text-sm font-medium">Backup & Restore</span>
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-colors">
+                        <i class="fa-solid fa-shield-halved w-5 text-center"></i>
+                        <span class="text-sm font-medium">Settings & Security</span>
+                    </a>
+                </nav>
+            </div>
+        </div>
+
+        <div class="p-4 border-t border-surface-100 dark:border-surface-700">
+            <button class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm">
+                <i class="fa-solid fa-plus"></i> New Note
+            </button>
+        </div>
+    </aside>
+
+    <!-- Center: Main Editor (High Performance) -->
+    <main class="flex-1 flex flex-col h-full relative bg-[#F8FAFC] dark:bg-[#0F172A] z-10">
+        
+        <!-- Editor Header / Toolbar -->
+        <header class="h-14 flex-shrink-0 border-b border-surface-200 dark:border-surface-700 flex items-center justify-between px-4 bg-white dark:bg-surface-800 z-10">
+            <div class="flex items-center gap-2">
+                <button class="w-8 h-8 rounded-lg flex items-center justify-center text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors xl:hidden">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="flex items-center text-sm text-surface-500">
+                    <span class="hover:text-surface-800 dark:hover:text-surface-200 cursor-pointer">Work Projects</span>
+                    <i class="fa-solid fa-chevron-right text-[10px] mx-2"></i>
+                    <span class="font-medium text-surface-900 dark:text-white">Dashboard Redesign</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-1">
+                <button class="w-8 h-8 rounded-lg flex items-center justify-center text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors" title="Format Text">
+                    <i class="fa-solid fa-bold text-sm"></i>
+                </button>
+                <button class="w-8 h-8 rounded-lg flex items-center justify-center text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors" title="Insert Snippet">
+                    <i class="fa-solid fa-code text-sm"></i>
+                </button>
+                <div class="w-[1px] h-4 bg-surface-200 dark:bg-surface-700 mx-1"></div>
+                <button class="w-8 h-8 rounded-lg flex items-center justify-center text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors" title="Keyboard Shortcuts" onclick="document.getElementById('shortcuts-modal').classList.toggle('hidden')">
+                    <i class="fa-regular fa-keyboard text-sm"></i>
+                </button>
+                <button class="w-8 h-8 rounded-lg flex items-center justify-center text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors" title="Toggle Right Panel">
+                    <i class="fa-solid fa-sidebar text-sm"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Utility Bar (Language & RTL) from previous screen context -->
+        <div class="h-8 border-b border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800/50 flex items-center justify-end px-4 gap-4 text-xs z-10">
+            <button class="flex items-center gap-1.5 text-surface-500 hover:text-surface-900 dark:hover:text-white transition-colors">
+                <i class="fa-solid fa-align-right"></i> RTL
+            </button>
+            <div class="h-3 w-[1px] bg-surface-200 dark:bg-surface-700"></div>
+            <div class="flex items-center gap-1.5 text-surface-500 hover:text-surface-900 dark:hover:text-white cursor-pointer transition-colors">
+                <i class="fa-solid fa-globe"></i> EN <i class="fa-solid fa-chevron-down text-[8px]"></i>
+            </div>
+            <div class="h-3 w-[1px] bg-surface-200 dark:bg-surface-700"></div>
+            <button class="text-surface-500 hover:text-surface-900 dark:hover:text-white transition-colors" onclick="document.documentElement.classList.toggle('dark')">
+                <i class="fa-regular fa-moon"></i>
+            </button>
+        </div>
+
+        <!-- Tips Bar -->
+        <div class="bg-brand-50 dark:bg-brand-900/20 border-b border-brand-100 dark:border-brand-800/50 p-2 px-4 flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2 text-brand-700 dark:text-brand-300">
+                <i class="fa-regular fa-lightbulb text-brand-500"></i>
+                <span><strong>Tip:</strong> Type <code class="px-1 py-0.5 bg-white dark:bg-surface-800 rounded border border-brand-200 dark:border-brand-700">/</code> to insert templates, snippets, or formatting blocks.</span>
+            </div>
+            <button class="text-brand-400 hover:text-brand-600"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <!-- Editor Scroll Area with Minimap container -->
+        <div class="flex-1 overflow-hidden relative flex">
+            
+            <!-- Actual Editor Content -->
+            <div class="flex-1 overflow-y-auto pb-32 scroll-smooth" id="editor-scroll">
+                <div class="max-w-[800px] mx-auto pt-12 px-8">
+                    
+                    <!-- Title -->
+                    <div class="mb-8">
+                        <input type="text" value="Dashboard Redesign Architecture" class="w-full text-4xl font-bold text-surface-900 dark:text-white bg-transparent border-none outline-none placeholder-surface-300 dark:placeholder-surface-600" placeholder="Note Title">
+                        <div class="flex items-center gap-4 mt-3 text-xs text-surface-500">
+                            <span class="flex items-center gap-1"><i class="fa-regular fa-calendar"></i> Oct 24, 2023</span>
+                            <span class="flex items-center gap-1"><i class="fa-solid fa-user-pen"></i> Alex Morgan</span>
+                            <span class="px-2 py-0.5 rounded bg-surface-200 dark:bg-surface-700 text-surface-700 dark:text-surface-300">v1.4</span>
+                        </div>
+                    </div>
+
+                    <!-- Simulated 10k Line Editor Content -->
+                    <div class="editor-content text-base leading-relaxed text-surface-700 dark:text-surface-300" contenteditable="true" spellcheck="false">
+                        <div class="editor-line"><span class="line-number">1</span><div class="flex-1"><h2>1. Overview</h2></div></div>
+                        <div class="editor-line"><span class="line-number">2</span><div class="flex-1">The new dashboard architecture focuses on a three-pane layout to maximize productivity for power users. As discussed in <span class="wiki-link">[[Q3 Planning]]</span>, we need to ensure the editor can handle 10,000+ lines without performance degradation.</div></div>
+                        <div class="editor-line"><span class="line-number">3</span><div class="flex-1"><br></div></div>
+                        <div class="editor-line"><span class="line-number">4</span><div class="flex-1"><h3>1.1 Key Requirements</h3></div></div>
+                        <div class="editor-line"><span class="line-number">5</span><div class="flex-1"><ul><li>Virtual DOM rendering for large documents</li><li>Web Worker offloading for markdown parsing</li><li>IndexedDB for local caching (PWA support)</li></ul></div></div>
+                        <div class="editor-line"><span class="line-number">6</span><div class="flex-1"><br></div></div>
+                        <div class="editor-line"><span class="line-number">7</span><div class="flex-1"><h2>2. Component Structure</h2></div></div>
+                        <div class="editor-line"><span class="line-number">8</span><div class="flex-1">Below is the proposed React component tree for the main view:</div></div>
+                        <div class="editor-line"><span class="line-number">9</span><div class="flex-1">
+                            <pre class="code-block my-4"><code>const MainLayout = () => {
+  return (
+    &lt;WorkspaceProvider&gt;
+      &lt;LeftSidebar /&gt;
+      &lt;EditorCanvas /&gt;
+      &lt;RightUtilityPanel /&gt;
+    &lt;/WorkspaceProvider&gt;
+  );
+};</code></pre>
+                        </div></div>
+                        <div class="editor-line"><span class="line-number">10</span><div class="flex-1"><h2>3. Security Implementation</h2></div></div>
+                        <div class="editor-line"><span class="line-number">11</span><div class="flex-1">Following the settings configured in the <span class="wiki-link">[[Security Hardening]]</span> spec, the editor must respect the <code>clipboard-protection</code> toggle.</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Code Minimap (Absolute positioned over right edge of editor) -->
+            <div class="hidden lg:block w-16 h-full border-l border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800/50 relative overflow-hidden flex-shrink-0">
+                <!-- Minimap visual representation -->
+                <div class="absolute top-0 left-0 w-full p-2 space-y-1 opacity-50">
+                    <div class="w-3/4 h-1 bg-surface-400 dark:bg-surface-500 rounded"></div>
+                    <div class="w-full h-0.5 bg-surface-300 dark:bg-surface-600 rounded"></div>
+                    <div class="w-5/6 h-0.5 bg-surface-300 dark:bg-surface-600 rounded"></div>
+                    <div class="w-1/2 h-1 bg-surface-400 dark:bg-surface-500 rounded mt-2"></div>
+                    <div class="w-full h-0.5 bg-surface-300 dark:bg-surface-600 rounded"></div>
+                    <div class="w-full h-8 bg-brand-200 dark:bg-brand-800 rounded mt-2"></div>
+                    <div class="w-2/3 h-1 bg-surface-400 dark:bg-surface-500 rounded mt-2"></div>
+                    <div class="w-full h-0.5 bg-surface-300 dark:bg-surface-600 rounded"></div>
+                </div>
+                <!-- Viewport indicator -->
+                <div class="absolute top-0 left-0 w-full h-24 bg-brand-500/10 border-y-2 border-brand-500/30 cursor-grab hover:bg-brand-500/20 transition-colors"></div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Right Sidebar: TOC & Backlinks -->
+    <aside id="right-sidebar" class="w-[280px] h-full flex-shrink-0 flex flex-col border-l border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 z-20 hidden lg:flex">
+        
+        <div class="p-4 border-b border-surface-100 dark:border-surface-700 flex justify-between items-center">
+            <h3 class="text-sm font-semibold text-surface-900 dark:text-white">Note Details</h3>
+            <button class="w-6 h-6 rounded flex items-center justify-center text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors">
+                <i class="fa-solid fa-ellipsis-vertical text-xs"></i>
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-4 space-y-8">
+            
+            <!-- Table of Contents -->
+            <div>
+                <h4 class="text-xs font-semibold text-surface-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-list-ul"></i> Table of Contents
+                </h4>
+                <div class="relative pl-3 border-l-2 border-surface-200 dark:border-surface-700 space-y-2 text-sm">
+                    <div class="absolute w-2 h-2 rounded-full bg-brand-500 -left-[5px] top-[6px]"></div>
+                    <a href="#" class="block text-brand-600 dark:text-brand-400 font-medium">1. Overview</a>
+                    <a href="#" class="block text-surface-500 hover:text-surface-700 dark:hover:text-surface-300 transition-colors pl-4">1.1 Key Requirements</a>
+                    <a href="#" class="block text-surface-500 hover:text-surface-700 dark:hover:text-surface-300 transition-colors">2. Component Structure</a>
+                    <a href="#" class="block text-surface-500 hover:text-surface-700 dark:hover:text-surface-300 transition-colors">3. Security Implementation</a>
+                </div>
+            </div>
+
+            <!-- Backlinks / Hyperlinks -->
+            <div>
+                <h4 class="text-xs font-semibold text-surface-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-link"></i> Linked Mentions (2)
+                </h4>
+                <div class="space-y-3">
+                    <div class="p-3 rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800/50">
+                        <div class="flex justify-between items-start mb-1">
+                            <a href="#" class="text-sm font-medium text-brand-600 dark:text-brand-400 hover:underline">Q3 Planning</a>
+                        </div>
+                        <p class="text-xs text-surface-500 line-clamp-2">...we need to finalize the <span class="bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 px-1 rounded">[[Dashboard Redesign Architecture]]</span> before the end of sprint...</p>
+                    </div>
+                    
+                    <div class="p-3 rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800/50">
+                        <div class="flex justify-between items-start mb-1">
+                            <a href="#" class="text-sm font-medium text-brand-600 dark:text-brand-400 hover:underline">Security Hardening</a>
+                        </div>
+                        <p class="text-xs text-surface-500 line-clamp-2">...ensure that the new <span class="bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 px-1 rounded">[[Dashboard Redesign Architecture]]</span> integrates the clipboard protection...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Properties / Tags -->
+            <div>
+                <h4 class="text-xs font-semibold text-surface-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-tags"></i> Properties
+                </h4>
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-surface-500">Status</span>
+                        <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-xs font-medium">In Progress</span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-surface-500">Assignee</span>
+                        <div class="flex items-center gap-1.5">
+                            <div class="w-5 h-5 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center text-[10px] font-bold">AM</div>
+                            <span class="text-surface-900 dark:text-white text-xs">Alex M.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </aside>
+
+    <!-- Slash Command Menu (Hidden by default) -->
+    <div id="slash-menu" class="hidden absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 bg-white dark:bg-surface-800 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] border border-surface-200 dark:border-surface-700 overflow-hidden z-50">
+        <div class="p-2 border-b border-surface-100 dark:border-surface-700 text-xs text-surface-500 font-medium px-3">
+            Quick Snippets & Blocks
+        </div>
+        <div class="p-1 max-h-64 overflow-y-auto">
+            <button class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors">
+                <div class="w-6 h-6 rounded bg-surface-100 dark:bg-surface-900 flex items-center justify-center text-surface-500">
+                    <i class="fa-solid fa-code"></i>
+                </div>
+                <div>
+                    <div class="text-sm font-medium text-surface-900 dark:text-white">Code Block</div>
+                </div>
+            </button>
+            <button class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors">
+                <div class="w-6 h-6 rounded bg-brand-50 dark:bg-brand-900/20 flex items-center justify-center text-brand-500">
+                    <i class="fa-regular fa-calendar-check"></i>
+                </div>
+                <div>
+                    <div class="text-sm font-medium text-surface-900 dark:text-white">Meeting Template</div>
+                </div>
+            </button>
+            <button class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors">
+                <div class="w-6 h-6 rounded bg-surface-100 dark:bg-surface-900 flex items-center justify-center text-surface-500">
+                    <i class="fa-solid fa-list-check"></i>
+                </div>
+                <div>
+                    <div class="text-sm font-medium text-surface-900 dark:text-white">Task List</div>
+                </div>
+            </button>
+        </div>
+    </div>
+
+    <!-- Keyboard Shortcuts Overlay (Hidden by default) -->
+    <div id="shortcuts-modal" class="hidden fixed inset-0 bg-surface-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-surface-800 rounded-2xl w-full max-w-md shadow-2xl border border-surface-200 dark:border-surface-700 overflow-hidden">
+            <div class="p-4 border-b border-surface-100 dark:border-surface-700 flex justify-between items-center">
+                <h3 class="font-bold text-surface-900 dark:text-white">Keyboard Shortcuts</h3>
+                <button onclick="document.getElementById('shortcuts-modal').classList.add('hidden')" class="text-surface-400 hover:text-surface-600 dark:hover:text-surface-200">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="p-4 space-y-3 max-h-[60vh] overflow-y-auto">
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-surface-600 dark:text-surface-400">Command Menu</span>
+                    <kbd class="px-2 py-1 bg-surface-100 dark:bg-surface-700 rounded border border-surface-200 dark:border-surface-600 text-surface-900 dark:text-white font-mono text-xs">⌘ + K</kbd>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-surface-600 dark:text-surface-400">Insert Block</span>
+                    <kbd class="px-2 py-1 bg-surface-100 dark:bg-surface-700 rounded border border-surface-200 dark:border-surface-600 text-surface-900 dark:text-white font-mono text-xs">/</kbd>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-surface-600 dark:text-surface-400">Toggle Sidebar</span>
+                    <kbd class="px-2 py-1 bg-surface-100 dark:bg-surface-700 rounded border border-surface-200 dark:border-surface-600 text-surface-900 dark:text-white font-mono text-xs">⌘ + \</kbd>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-surface-600 dark:text-surface-400">Link Note</span>
+                    <kbd class="px-2 py-1 bg-surface-100 dark:bg-surface-700 rounded border border-surface-200 dark:border-surface-600 text-surface-900 dark:text-white font-mono text-xs">[[</kbd>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

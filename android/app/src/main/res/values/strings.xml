@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Zed Notetaker</string>
+    <string name="title_activity_main">Zed Notetaker</string>
+    <string name="package_name">com.zed.notetaker</string>
+    <string name="custom_url_scheme">com.zed.notetaker</string>
+</resources>
