@@ -96,22 +96,33 @@ export interface ShortcutDef {
   shift?: boolean;
   alt?: boolean;
   label: string;
+  description?: string;
   category: string;
 }
 
 export const KEYBOARD_SHORTCUTS: ShortcutDef[] = [
-  { key: 's', mod: true, label: 'Save note', category: 'General' },
-  { key: 'n', mod: true, label: 'New note', category: 'General' },
-  { key: 'f', mod: true, label: 'Focus search', category: 'General' },
-  { key: '/', mod: true, label: 'Show keyboard shortcuts', category: 'General' },
-  { key: 'b', mod: true, label: 'Bold', category: 'Formatting' },
-  { key: 'i', mod: true, label: 'Italic', category: 'Formatting' },
-  { key: 'h', mod: true, shift: true, label: 'Heading', category: 'Formatting' },
-  { key: 'k', mod: true, label: 'Insert link', category: 'Formatting' },
-  { key: '`', mod: true, label: 'Inline code', category: 'Formatting' },
-  { key: 'p', mod: true, shift: true, label: 'Toggle preview', category: 'View' },
-  { key: 'j', mod: true, label: 'Toggle AI panel', category: 'AI' },
-  { key: 'Enter', mod: true, label: 'Send AI message', category: 'AI' },
+  // General
+  { key: 's', mod: true, label: 'Save note', description: 'Persist current note to local storage', category: 'General' },
+  { key: 'n', mod: true, label: 'New note', description: 'Create a blank note in the current folder', category: 'General' },
+  { key: 'f', mod: true, label: 'Focus search', description: 'Jump to the notes search bar', category: 'General' },
+  { key: '/', mod: true, label: 'Keyboard shortcuts', description: 'Open this shortcuts reference panel', category: 'General' },
+  // Navigation
+  { key: 'k', mod: true, label: 'Command palette', description: 'Open global search and command runner', category: 'Navigation' },
+  { key: '\\', mod: true, label: 'Toggle sidebar', description: 'Show or hide the left navigation panel', category: 'Navigation' },
+  { key: 'p', mod: true, shift: true, label: 'Toggle preview', description: 'Switch between edit and rendered preview', category: 'Navigation' },
+  // Editor & Formatting
+  { key: 'b', mod: true, label: 'Bold text', description: 'Toggle strong styling on selection', category: 'Editor & Formatting' },
+  { key: 'i', mod: true, label: 'Italic text', description: 'Toggle emphasis styling on selection', category: 'Editor & Formatting' },
+  { key: 'h', mod: true, shift: true, label: 'Heading', description: 'Insert or cycle through heading levels', category: 'Editor & Formatting' },
+  { key: 'l', mod: true, shift: true, label: 'Insert link', description: 'Wrap selection in a Markdown link', category: 'Editor & Formatting' },
+  { key: '`', mod: true, label: 'Inline code', description: 'Wrap selection in backtick code span', category: 'Editor & Formatting' },
+  { key: 'c', mod: true, shift: true, label: 'Create checkbox', description: 'Insert a task list item at cursor', category: 'Editor & Formatting' },
+  // Templates
+  { key: 't', mod: true, shift: true, label: 'Insert template', description: 'Open the note templates picker', category: 'Templates' },
+  { key: '.', mod: true, label: 'Quick snippet', description: 'Expand a saved snippet at cursor', category: 'Templates' },
+  // AI
+  { key: 'j', mod: true, label: 'Toggle AI panel', description: 'Show or hide the AI assistant panel', category: 'AI' },
+  { key: 'Enter', mod: true, label: 'Send AI message', description: 'Submit the current AI prompt', category: 'AI' },
 ];
 
 /* ─── High Contrast Detection ─── */

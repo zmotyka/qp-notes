@@ -95,6 +95,38 @@ export async function handleRedirectResult(): Promise<User | null> {
   }
 }
 
+/**
+ * Request a Google Drive access token by signing in (or re-signing in) with
+ * a Drive-scoped GoogleAuthProvider via Firebase Auth popup.
+ * The user who is already signed into Google will see only a brief consent
+ * screen if this is the first time Drive access is requested.
+ */
+export async function getGoogleDriveAccessToken(): Promise<{ accessToken: string; expiresAt: number }> {
+  await ensurePersistence();
+  const auth = getFirebaseAuth();
+  const driveProvider = new GoogleAuthProvider();
+  driveProvider.addScope('https://www.googleapis.com/auth/drive.file');
+
+  try {
+    const result = await signInWithPopup(auth, driveProvider);
+    const credential = GoogleAuthProvider.credentialFromResult(result);
+    if (!credential?.accessToken) throw new Error('No access token returned by Google');
+    return {
+      accessToken: credential.accessToken,
+      expiresAt: Date.now() + 3540_000, // 59 min (1 h standard minus 1 min buffer)
+    };
+  } catch (err: any) {
+    if (
+      err?.code === 'auth/popup-blocked' ||
+      err?.code === 'auth/popup-closed-by-user' ||
+      err?.code === 'auth/cancelled-popup-request'
+    ) {
+      throw new Error('Please allow popups for this site to connect Google Drive');
+    }
+    throw err;
+  }
+}
+
 /* ─── Sign out ─── */
 
 export async function signOut(): Promise<void> {

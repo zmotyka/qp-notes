@@ -1,4 +1,4 @@
-/* ═══════════════════════════════════════════════════════════
+﻿/* ═══════════════════════════════════════════════════════════
    Google Drive Provider — OAuth 2.0 PKCE + Drive v3 API
    ═══════════════════════════════════════════════════════════ */
 
@@ -66,7 +66,6 @@ export class GoogleDriveProvider implements CloudProvider {
     const challenge = await generateCodeChallenge(verifier);
     const state = crypto.randomUUID();
 
-    // Store verifier + state for the callback
     sessionStorage.setItem('pkce_verifier', verifier);
     sessionStorage.setItem('pkce_state', state);
 
@@ -82,18 +81,26 @@ export class GoogleDriveProvider implements CloudProvider {
       prompt: 'consent',
     });
 
-    // Open popup
     const popup = window.open(`${AUTH_URL}?${params}`, 'google-auth', 'width=500,height=600');
     if (!popup) {
       this.setStatus('error');
       throw new Error('Popup blocked — please allow popups for this site');
     }
 
-    // Wait for callback
     const code = await this.waitForAuthCode(popup, state);
     await this.exchangeCode(code, verifier);
   }
 
+  /**
+   * Accept an access token obtained externally (e.g. from Firebase Auth).
+   * No refresh token is stored — user will need to reconnect after expiry.
+   */
+  async authorizeWithExternalToken(accessToken: string, expiresAt: number): Promise<void> {
+    this.setStatus('connecting');
+    this.tokens = { accessToken, refreshToken: null, expiresAt };
+    await storeTokens(this.id, this.tokens);
+    this.setStatus('connected');
+  }
   private waitForAuthCode(popup: Window, expectedState: string): Promise<string> {
     return new Promise((resolve, reject) => {
       const interval = setInterval(() => {

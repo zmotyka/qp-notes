@@ -7,6 +7,8 @@ export interface Note {
   content: string;
   rawContent?: string;
   markdownContent?: string;
+  markdownPromptSystem?: string;
+  markdownPromptTemplate?: string;
   markdownDirty?: boolean;
   suggestedActions?: string[];
   lastRawSuggestionHash?: string | null;

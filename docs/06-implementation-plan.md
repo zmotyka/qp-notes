@@ -101,16 +101,17 @@
 | 3.0.2 | Firestore collection path: `users/{uid}/notes/{noteId}` ✅ |
 | 3.0.3 | `onSnapshot` real-time listener for live cross-device sync ✅ |
 | 3.0.4 | Offline persistence via `persistentLocalCache` (Firestore SDK) ✅ |
-| 3.1 | Google Drive OAuth 2.0 PKCE flow |
-| 3.2 | Google Drive sync engine: upload, download, delta |
-| 3.3 | OneDrive Microsoft Graph integration |
-| 3.4 | Dropbox API v2 integration |
-| 3.5 | Conflict detection via revision/etag comparison |
-| 3.6 | Three-way merge conflict resolution UI |
-| 3.7 | Background sync with exponential backoff |
-| 3.8 | Version history: store last 20 revisions, diff viewer |
-| 3.9 | Full export (ZIP: .md files + attachments + metadata.json) |
-| 3.10 | Import from backup ZIP |
+| 3.1 | Managed OAuth app registrations (Google Drive, OneDrive, Dropbox) with callback `/auth/callback` |
+| 3.2 | One-click provider connection UX (no end-user OAuth setup, no client ID input) |
+| 3.3 | Google Drive sync engine: upload, download, delta |
+| 3.4 | OneDrive Microsoft Graph integration |
+| 3.5 | Dropbox API v2 integration |
+| 3.6 | Conflict detection via revision/etag comparison |
+| 3.7 | Three-way merge conflict resolution UI |
+| 3.8 | Background sync with exponential backoff |
+| 3.9 | Version history: store last 20 revisions, diff viewer |
+| 3.10 | Full export (ZIP: .md files + attachments + metadata.json) |
+| 3.11 | Import from backup ZIP |
 
 **Verify:** Edit on two devices, trigger conflict, resolve. Export/import roundtrip.
 

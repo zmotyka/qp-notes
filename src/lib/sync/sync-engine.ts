@@ -269,7 +269,7 @@ export class SyncEngine {
       const parsed = this.deserializeNote(content, file.name);
       await db.notes.add({
         ...parsed,
-        rawContent: parsed.content,
+        rawContent: parsed.rawContent ?? parsed.content,
         markdownContent: parsed.content,
         markdownDirty: false,
         suggestedActions: [],
@@ -303,8 +303,10 @@ export class SyncEngine {
       await db.notes.update(localNote.id!, {
         title: parsed.title,
         content: parsed.content,
-        rawContent: parsed.content,
+        rawContent: parsed.rawContent ?? parsed.content,
         markdownContent: parsed.content,
+        markdownPromptSystem: parsed.markdownPromptSystem,
+        markdownPromptTemplate: parsed.markdownPromptTemplate,
         markdownDirty: false,
         tags: parsed.tags,
         modified: file.modified,
@@ -334,8 +336,10 @@ export class SyncEngine {
         await db.notes.update(noteId, {
           title: parsed.title,
           content: parsed.content,
-          rawContent: parsed.content,
+          rawContent: parsed.rawContent ?? parsed.content,
           markdownContent: parsed.content,
+          markdownPromptSystem: parsed.markdownPromptSystem,
+          markdownPromptTemplate: parsed.markdownPromptTemplate,
           markdownDirty: false,
           tags: parsed.tags,
           modified: conflict.remoteModified,
@@ -375,6 +379,9 @@ export class SyncEngine {
     lines.push(`modified: ${new Date(note.modified).toISOString()}`);
     if (note.pinned) lines.push(`pinned: true`);
     if (note.id) lines.push(`localId: ${note.id}`);
+    lines.push(`rawContent: ${JSON.stringify(note.rawContent ?? note.content)}`);
+    if (typeof note.markdownPromptSystem === 'string') lines.push(`markdownPromptSystem: ${JSON.stringify(note.markdownPromptSystem)}`);
+    if (typeof note.markdownPromptTemplate === 'string') lines.push(`markdownPromptTemplate: ${JSON.stringify(note.markdownPromptTemplate)}`);
     lines.push('---');
     lines.push('');
     lines.push(note.content);
@@ -385,7 +392,7 @@ export class SyncEngine {
   private deserializeNote(
     raw: string,
     filename: string,
-  ): Pick<Note, 'title' | 'content' | 'tags' | 'folderId' | 'created' | 'modified' | 'pinned'> {
+  ): Pick<Note, 'title' | 'content' | 'rawContent' | 'markdownPromptSystem' | 'markdownPromptTemplate' | 'tags' | 'folderId' | 'created' | 'modified' | 'pinned'> {
     const fmRegex = /^---\n([\s\S]*?)\n---\n?([\s\S]*)$/;
     const match = raw.match(fmRegex);
 
@@ -393,6 +400,9 @@ export class SyncEngine {
       return {
         title: filename.replace(/\.md$/i, ''),
         content: raw,
+        rawContent: raw,
+        markdownPromptSystem: undefined,
+        markdownPromptTemplate: undefined,
         tags: [],
         folderId: null,
         created: Date.now(),
@@ -413,8 +423,11 @@ export class SyncEngine {
     const created = this.yamlDate(frontMatter, 'created') || Date.now();
     const modified = this.yamlDate(frontMatter, 'modified') || Date.now();
     const pinned = /pinned:\s*true/i.test(frontMatter);
+    const rawContent = this.yamlJsonString(frontMatter, 'rawContent') || content;
+    const markdownPromptSystem = this.yamlJsonString(frontMatter, 'markdownPromptSystem') ?? undefined;
+    const markdownPromptTemplate = this.yamlJsonString(frontMatter, 'markdownPromptTemplate') ?? undefined;
 
-    return { title, content, tags, folderId: null, created, modified, pinned };
+    return { title, content, rawContent, markdownPromptSystem, markdownPromptTemplate, tags, folderId: null, created, modified, pinned };
   }
 
   private yamlValue(yaml: string, key: string): string | null {
@@ -428,6 +441,17 @@ export class SyncEngine {
     if (!val) return null;
     const ts = new Date(val).getTime();
     return isNaN(ts) ? null : ts;
+  }
+
+  private yamlJsonString(yaml: string, key: string): string | null {
+    const regex = new RegExp(`^${key}:\\s*(.+)$`, 'm');
+    const match = yaml.match(regex);
+    if (!match) return null;
+    try {
+      return JSON.parse(match[1]) as string;
+    } catch {
+      return null;
+    }
   }
 }
 

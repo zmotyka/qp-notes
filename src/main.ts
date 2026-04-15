@@ -41,13 +41,13 @@ import {
   type FirestoreNote,
 } from './lib/sync/firestore';
 import { saveRevision, getRevisions, deleteHistory, diffTexts, renderDiffHTML, type Revision } from './lib/history';
-import { exportToZip, downloadBlob, importFromZip } from './lib/backup';
+import { exportToZip, downloadBlob, importFromZip, type ExportOptions } from './lib/backup';
 import type { LLMStatus } from './lib/llm/engine';
 import type { ChatMessage } from './lib/llm/provider';
 import { BUILTIN_PROMPTS, interpolate, getAllPrompts, savePrompt, deletePrompt, exportPrompts, importPrompts, type PromptContext } from './lib/prompts';
 import { getAllNoteTemplates, saveNoteTemplate, deleteNoteTemplate, renderNoteTemplate } from './lib/note-templates';
 import { extractFromFile, isSupportedFile, handleClipboardPaste, saveAttachment } from './lib/upload';
-import { isWebSpeechSupported, startWebSpeech, stopSpeech, getSpeechListening, SPEECH_LANGUAGES } from './lib/speech';
+import { isWebSpeechSupported, startWebSpeech, stopSpeech, getSpeechListening, SPEECH_LANGUAGES, isTtsSupported, speakText, stopTts, getTtsState } from './lib/speech';
 import { initI18n, setLanguage, getCurrentLanguage, LANGUAGES } from './lib/i18n';
 import { initLiveRegion, announce, addSkipLink, KEYBOARD_SHORTCUTS, trapFocus } from './lib/a11y';
 import type { EditorView } from '@codemirror/view';
@@ -80,48 +80,67 @@ let currentListFilter: string = 'all';
 let currentSearchQuery = '';
 const collapsedExplorerSections = new Set<string>();
 const collapsedNoteTreeFolders = new Set<string>();
+const selectedNoteIds = new Set<number>();
+let lastSelectedNoteId: number | null = null;
 let aiMobileExpanded = false;
+let aiVoiceOutputEnabled = true;
+let aiVoiceInputListening = false;
 let sidebarTreeCollapsed = false;
 let sidebarFilelistCollapsed = false;
+let workspacePanelHidden = false;
 let selectedSyncProviderType: 'gdrive' | 'onedrive' | 'dropbox' = 'gdrive';
-type SettingsTabId = 'general' | 'sync' | 'ai' | 'security';
+type SettingsTabId = 'general' | 'sync' | 'ai' | 'security' | 'shortcuts' | 'accessibility';
 let activeSettingsTab: SettingsTabId = 'general';
+type ExplorerTabId = 'library' | 'folders' | 'toc' | 'tags';
+let activeExplorerTab: ExplorerTabId = 'library';
+type PendingAIAttachment = {
+  filename: string;
+  mimeType: string;
+  extractedText: string;
+  preview: string;
+};
+let pendingAIAttachment: PendingAIAttachment | null = null;
+let aiConversationMode = false;
+let aiIsGenerating = false;
+const AI_ATTACHMENT_TEXT_LIMIT = 8000;
+const AI_ATTACHMENT_PREVIEW_LIMIT = 220;
 
 const RAW_MARKDOWN_DEBOUNCE_MS = 1200;
 const ACTION_PILLS_DEBOUNCE_MS = 1000;
 const DEFAULT_RAW_ACTIONS = ['Create task list', 'Generate mind map', 'Summarize draft'];
+const DEFAULT_MARKDOWN_PROMPT_SYSTEM = 'Convert raw draft notes into clean markdown. Keep the content faithful, preserve important details, and add headings or lists only when they improve readability. Return markdown only with no commentary.';
+const DEFAULT_MARKDOWN_PROMPT_TEMPLATE = 'Title: {{title}}\n\nCurrent markdown (may be empty):\n{{markdown}}\n\nRaw draft:\n{{raw}}';
 
 type SyncProviderType = 'gdrive' | 'onedrive' | 'dropbox';
+const NOTE_DRAG_MIME = 'application/x-zed-note-ids';
 
 const SYNC_PROVIDER_SETUP: Record<SyncProviderType, {
   label: string;
-  consoleName: string;
-  docsUrl: string;
-  createPath: string;
-  scopes: string;
+  description: string;
 }> = {
   gdrive: {
     label: 'Google Drive',
-    consoleName: 'Google Cloud Console',
-    docsUrl: 'https://console.cloud.google.com/apis/credentials',
-    createPath: 'APIs & Services > Credentials > Create Credentials > OAuth client ID (Web application)',
-    scopes: 'https://www.googleapis.com/auth/drive.file',
+    description: 'Connect your Google account to sync notes in your Drive app folder.',
   },
   onedrive: {
     label: 'OneDrive',
-    consoleName: 'Microsoft Entra Admin Center',
-    docsUrl: 'https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade',
-    createPath: 'App registrations > New registration > Authentication',
-    scopes: 'Files.ReadWrite.AppFolder offline_access',
+    description: 'Connect your Microsoft account to sync notes in your OneDrive app folder.',
   },
   dropbox: {
     label: 'Dropbox',
-    consoleName: 'Dropbox App Console',
-    docsUrl: 'https://www.dropbox.com/developers/apps',
-    createPath: 'Create app > Permissions > OAuth 2 > Redirect URIs',
-    scopes: 'files.content.write files.content.read files.metadata.read',
+    description: 'Connect your Dropbox account to sync notes in your app folder.',
   },
 };
+
+const MANAGED_SYNC_CLIENT_IDS: Record<SyncProviderType, string> = {
+  gdrive: (import.meta.env.VITE_SYNC_GOOGLE_CLIENT_ID || '').trim(),
+  onedrive: (import.meta.env.VITE_SYNC_ONEDRIVE_CLIENT_ID || '').trim(),
+  dropbox: (import.meta.env.VITE_SYNC_DROPBOX_CLIENT_ID || '').trim(),
+};
+
+function getManagedSyncClientId(type: SyncProviderType): string {
+  return MANAGED_SYNC_CLIENT_IDS[type] || '';
+}
 
 const AI_PROVIDER_SETUP: Record<string, { docsUrl: string; steps: string[]; keyHint: string }> = {
   openai: {
@@ -202,6 +221,164 @@ function setRawEditorValue(value: string): void {
   rawInput.value = value;
 }
 
+function getGenerationPromptSystemInput(): HTMLTextAreaElement | null {
+  return document.getElementById('generationPromptSystemInput') as HTMLTextAreaElement | null;
+}
+
+function getGenerationPromptTemplateInput(): HTMLTextAreaElement | null {
+  return document.getElementById('generationPromptTemplateInput') as HTMLTextAreaElement | null;
+}
+
+function getResolvedGenerationPromptSystem(note: Note | null): string {
+  if (!note) return DEFAULT_MARKDOWN_PROMPT_SYSTEM;
+  return typeof note.markdownPromptSystem === 'string'
+    ? note.markdownPromptSystem
+    : DEFAULT_MARKDOWN_PROMPT_SYSTEM;
+}
+
+function getResolvedGenerationPromptTemplate(note: Note | null): string {
+  if (!note) return DEFAULT_MARKDOWN_PROMPT_TEMPLATE;
+  return typeof note.markdownPromptTemplate === 'string'
+    ? note.markdownPromptTemplate
+    : DEFAULT_MARKDOWN_PROMPT_TEMPLATE;
+}
+
+function setGenerationPromptEditorValues(note: Note | null): void {
+  const systemInput = getGenerationPromptSystemInput();
+  const templateInput = getGenerationPromptTemplateInput();
+  if (!systemInput || !templateInput) return;
+  systemInput.value = getResolvedGenerationPromptSystem(note);
+  templateInput.value = getResolvedGenerationPromptTemplate(note);
+  updateGenerationPromptSummary();
+}
+
+function syncGenerationPromptDraftFromInputs(): void {
+  if (!currentNote) return;
+  const systemInput = getGenerationPromptSystemInput();
+  const templateInput = getGenerationPromptTemplateInput();
+  currentNote.markdownPromptSystem = systemInput?.value ?? DEFAULT_MARKDOWN_PROMPT_SYSTEM;
+  currentNote.markdownPromptTemplate = templateInput?.value ?? DEFAULT_MARKDOWN_PROMPT_TEMPLATE;
+  updateGenerationPromptSummary();
+}
+
+function updateGenerationPromptSummary(): void {
+  const summary = document.getElementById('generationPromptSummary');
+  if (!summary) return;
+  const systemValue = getGenerationPromptSystemInput()?.value ?? getResolvedGenerationPromptSystem(currentNote);
+  const templateValue = getGenerationPromptTemplateInput()?.value ?? getResolvedGenerationPromptTemplate(currentNote);
+  const isDefault = systemValue === DEFAULT_MARKDOWN_PROMPT_SYSTEM
+    && templateValue === DEFAULT_MARKDOWN_PROMPT_TEMPLATE;
+  const preview = templateValue.replace(/\s+/g, ' ').trim().slice(0, 68) || 'Prompt is empty';
+  summary.textContent = isDefault ? 'Default prompt' : `Custom: ${preview}`;
+}
+
+function queueSilentNoteSave(delay = 900): void {
+  if (autoSaveTimer) clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(() => {
+    void saveCurrentNote(true);
+  }, delay);
+}
+
+type GenerationPromptLibraryEntry = {
+  name: string;
+  systemInstruction: string;
+  userTemplate: string;
+  source: 'builtin' | 'custom';
+};
+
+async function getGenerationPromptLibraryEntries(): Promise<GenerationPromptLibraryEntry[]> {
+  const builtins: GenerationPromptLibraryEntry[] = BUILTIN_PROMPTS.map((prompt) => ({
+    name: prompt.name,
+    systemInstruction: prompt.systemInstruction,
+    userTemplate: prompt.userTemplate,
+    source: 'builtin',
+  }));
+  const customs = await getAllPrompts();
+  const customEntries: GenerationPromptLibraryEntry[] = customs.map((prompt) => ({
+    name: prompt.name,
+    systemInstruction: prompt.systemInstruction,
+    userTemplate: prompt.userTemplate,
+    source: 'custom',
+  }));
+  return [...builtins, ...customEntries];
+}
+
+async function loadGenerationPromptFromLibrary(): Promise<void> {
+  if (!currentNote) {
+    setStatus('Open a note first to load a generation prompt');
+    return;
+  }
+  const entries = await getGenerationPromptLibraryEntries();
+  if (entries.length === 0) {
+    setStatus('Prompt library is empty');
+    return;
+  }
+  const lines = entries.map((entry, index) => `${index + 1}. ${entry.name} (${entry.source === 'builtin' ? 'Built-in' : 'Custom'})`).join('\n');
+  const selection = window.prompt(`Choose a prompt number to load:\n\n${lines}`, '1');
+  if (selection == null) return;
+
+  const index = Number.parseInt(selection, 10) - 1;
+  if (!Number.isFinite(index) || index < 0 || index >= entries.length) {
+    setStatus('Invalid prompt selection');
+    return;
+  }
+
+  const selected = entries[index];
+  const systemInput = getGenerationPromptSystemInput();
+  const templateInput = getGenerationPromptTemplateInput();
+  if (systemInput) systemInput.value = selected.systemInstruction || '';
+  if (templateInput) templateInput.value = selected.userTemplate || '';
+  syncGenerationPromptDraftFromInputs();
+  queueSilentNoteSave(0);
+  setStatus(`Loaded prompt: ${selected.name}`);
+}
+
+async function saveGenerationPromptToLibraryFromNote(): Promise<void> {
+  if (!currentNote) {
+    setStatus('Open a note first to save a generation prompt');
+    return;
+  }
+  const systemInstruction = (getGenerationPromptSystemInput()?.value ?? getResolvedGenerationPromptSystem(currentNote)).trim();
+  const userTemplate = (getGenerationPromptTemplateInput()?.value ?? getResolvedGenerationPromptTemplate(currentNote)).trim();
+  if (!userTemplate) {
+    setStatus('User template cannot be empty');
+    return;
+  }
+
+  const defaultName = `${(currentNote.title || 'Generation Prompt').trim() || 'Generation Prompt'} Prompt`;
+  const nameInput = window.prompt('Name this prompt:', defaultName);
+  if (nameInput == null) return;
+  const name = nameInput.trim();
+  if (!name) {
+    setStatus('Prompt name is required');
+    return;
+  }
+
+  await savePrompt({
+    name,
+    systemInstruction,
+    userTemplate,
+    defaultProvider: '',
+  });
+  await refreshPromptLibrary();
+  setStatus(`Saved prompt to library: ${name}`);
+}
+
+function buildMarkdownGenerationMessages(note: Note, raw: string): ChatMessage[] {
+  const markdown = editor?.state.doc.toString() ?? getNoteMarkdownContent(note);
+  const systemPrompt = getResolvedGenerationPromptSystem(note);
+  const userPrompt = getResolvedGenerationPromptTemplate(note)
+    .replace(/\{\{raw\}\}/g, raw)
+    .replace(/\{\{title\}\}/g, note.title)
+    .replace(/\{\{markdown\}\}/g, markdown)
+    .replace(/\{\{content\}\}/g, raw);
+
+  return [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: userPrompt.slice(0, 14000) },
+  ];
+}
+
 function toggleEditorSection(section: 'raw' | 'markdown' | 'preview'): void {
   const host = document.querySelector<HTMLElement>(`.editor-section[data-section="${section}"]`);
   if (!host) return;
@@ -265,8 +442,8 @@ async function switchMobileDrawerTab(tab: 'toc' | 'pinned'): Promise<void> {
       tocListEl.innerHTML = '<p style="font-size:12px;color:var(--text3);padding:8px 0;">No headings found in this note.</p>';
     } else {
       tocListEl.innerHTML = headings.map(h => `
-        <div class="tree-item toc-item" data-toc-line="${h.line}" style="padding-left:${8 + (h.level - 1) * 12}px;">
-          <span class="tree-item-label" style="font-size:${h.level <= 2 ? '12px' : '11px'};${h.level === 1 ? 'font-weight:600;' : ''}">${escapeHtml(h.text)}</span>
+        <div class="tree-item toc-item" data-toc-line="${h.line}" data-toc-level="${h.level}" style="--toc-indent:${8 + (h.level - 1) * 12}px;">
+          <span class="tree-item-label">${escapeHtml(h.text)}</span>
         </div>
       `).join('');
       tocListEl.querySelectorAll<HTMLElement>('[data-toc-line]').forEach(el => {
@@ -310,24 +487,70 @@ function toggleMobileDrawer(target: 'tree' | 'notes'): void {
   const tree = document.getElementById('sidebarTree');
   const notes = document.getElementById('sidebarFilelist');
   const backdrop = document.getElementById('sidebarBackdrop');
-  if (!tree || !notes || !backdrop) return;
+  if (!tree || !backdrop) return;
+
+  // Folders and notes now live in one unified left panel.
+  if (target === 'notes') target = 'tree';
 
   const treeOpen = tree.classList.contains('open');
-  const notesOpen = notes.classList.contains('open');
+  const notesOpen = notes?.classList.contains('open') ?? false;
 
   if (target === 'tree') {
     if (treeOpen) closeMobileDrawers();
     else {
       tree.classList.add('open');
-      notes.classList.remove('open');
+      notes?.classList.remove('open');
       backdrop.classList.add('open');
     }
   } else if (notesOpen) {
     closeMobileDrawers();
   } else {
-    notes.classList.add('open');
+    notes?.classList.add('open');
     tree.classList.remove('open');
     backdrop.classList.add('open');
+  }
+}
+
+function mergeWorkspacePanels(): void {
+  const sidebarTree = document.getElementById('sidebarTree');
+  const sidebarFilelist = document.getElementById('sidebarFilelist');
+  if (!sidebarTree || !sidebarFilelist) return;
+  if (sidebarTree.classList.contains('workspace-merged')) return;
+
+  const filelistHeader = sidebarFilelist.querySelector('.filelist-header');
+  const filelistItems = sidebarFilelist.querySelector('#filelistItems');
+  if (!filelistHeader || !filelistItems) return;
+
+  const notesSection = document.createElement('section');
+  notesSection.id = 'workspaceNotesSection';
+  notesSection.className = 'workspace-notes-section';
+  notesSection.appendChild(filelistHeader);
+  notesSection.appendChild(filelistItems);
+
+  sidebarTree.appendChild(notesSection);
+  sidebarTree.classList.add('workspace-merged');
+  sidebarFilelist.remove();
+
+  const notesMobileBtn = document.getElementById('btnMobileNotes');
+  if (notesMobileBtn) {
+    notesMobileBtn.title = 'Open Workspace';
+    notesMobileBtn.setAttribute('aria-label', 'Open Workspace');
+  }
+}
+
+function setWorkspacePanelHidden(hidden: boolean): void {
+  workspacePanelHidden = hidden;
+  const panel = document.getElementById('sidebarTree');
+  const app = document.getElementById('app');
+  const btn = document.getElementById('btnWorkspaceEdgeToggle');
+  panel?.classList.toggle('workspace-hidden', hidden);
+  app?.classList.toggle('workspace-panel-hidden', hidden);
+  if (btn) {
+    btn.title = hidden ? 'Show workspace panel' : 'Hide workspace panel';
+    btn.setAttribute('aria-label', btn.title);
+    btn.innerHTML = hidden
+      ? `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m6 3 5 5-5 5"/></svg>`
+      : `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m10 3-5 5 5 5"/></svg>`;
   }
 }
 
@@ -522,6 +745,7 @@ function addTag(tag: string): void {
   noteTags.push(normalized);
   renderTagPills();
   updateTagsHiddenField();
+  updateNoteDetailsTagPreview();
   hideTagSuggestions();
   scheduleTagSave();
 }
@@ -531,6 +755,7 @@ function removeTag(tag: string): void {
   noteTags = noteTags.filter(existing => existing.toLowerCase() !== lowered);
   renderTagPills();
   updateTagsHiddenField();
+  updateNoteDetailsTagPreview();
   scheduleTagSave();
 }
 
@@ -557,6 +782,7 @@ function setNoteTags(tags: string[]): void {
   noteTags = deduped;
   renderTagPills();
   updateTagsHiddenField();
+  updateNoteDetailsTagPreview();
   hideTagSuggestions();
 }
 
@@ -795,6 +1021,9 @@ async function ensureAutoLoadedLocalModel(): Promise<void> {
 async function abortAIGeneration(): Promise<void> {
   const { dispatchModule } = await ensureLLMRuntime();
   dispatchModule.abortGeneration();
+  stopTts();
+  aiIsGenerating = false;
+  updateAIComposerUI();
 }
 
 /* ─── Firestore Sync Helpers ─── */
@@ -805,7 +1034,9 @@ function mapRemoteToLocalNote(remote: FirestoreNote): Note {
     title: remote.title,
     content: remote.content,
     markdownContent: remote.content,
-    rawContent: remote.content,
+    rawContent: remote.rawContent ?? remote.content,
+    markdownPromptSystem: remote.markdownPromptSystem,
+    markdownPromptTemplate: remote.markdownPromptTemplate,
     markdownDirty: false,
     suggestedActions: [],
     lastRawSuggestionHash: null,
@@ -835,7 +1066,13 @@ async function mergeRemoteNote(remote: FirestoreNote): Promise<void> {
       title: remote.title,
       content: remote.content,
       markdownContent: remote.content,
-      rawContent: local?.rawContent ?? remote.content,
+      rawContent: remote.rawContent ?? local?.rawContent ?? remote.content,
+      markdownPromptSystem: typeof remote.markdownPromptSystem === 'string'
+        ? remote.markdownPromptSystem
+        : (local?.markdownPromptSystem ?? DEFAULT_MARKDOWN_PROMPT_SYSTEM),
+      markdownPromptTemplate: typeof remote.markdownPromptTemplate === 'string'
+        ? remote.markdownPromptTemplate
+        : (local?.markdownPromptTemplate ?? DEFAULT_MARKDOWN_PROMPT_TEMPLATE),
       markdownDirty: local?.markdownDirty ?? false,
       tags: remote.tags,
       folderId: remote.folderId,
@@ -935,6 +1172,8 @@ async function initFirestoreRealtimeSync(uid: string): Promise<void> {
         if (currentNote && editor) {
           const localContent = editor.state.doc.toString();
           const remoteMarkdown = getNoteMarkdownContent(currentNote);
+          setRawEditorValue(getNoteRawContent(currentNote));
+          setGenerationPromptEditorValues(currentNote);
           if (localContent !== remoteMarkdown) {
             applyingProgrammaticMarkdownUpdate = true;
             replaceContent(editor, remoteMarkdown);
@@ -972,7 +1211,7 @@ function renderApp(): void {
       </div>
       <div class="topbar-logo">
         <div class="topbar-logo-mark">Z</div>
-        <span class="topbar-logo-text">Zed Note</span>
+        <span class="topbar-logo-text">Nexus Notes</span>
       </div>
       <div class="divider-v"></div>
       <div class="search-wrap">
@@ -993,7 +1232,7 @@ function renderApp(): void {
           <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 10a2 2 0 100-4 2 2 0 000 4zm6.32-1.906l-1.07-.604a5.27 5.27 0 000-1.98l1.07-.604a.5.5 0 00.18-.68l-1-1.73a.5.5 0 00-.68-.18l-1.07.604A5.3 5.3 0 0010 2.2V.99a.5.5 0 00-.5-.5h-2a.5.5 0 00-.5.5v1.21a5.3 5.3 0 00-1.75.72L4.18 2.32a.5.5 0 00-.68.18l-1 1.73a.5.5 0 00.18.68l1.07.604a5.27 5.27 0 000 1.98l-1.07.604a.5.5 0 00-.18.68l1 1.73a.5.5 0 00.68.18l1.07-.604c.521.326 1.11.567 1.75.72V14.01a.5.5 0 00.5.5h2a.5.5 0 00.5-.5v-1.21a5.3 5.3 0 001.75-.72l1.07.604a.5.5 0 00.68-.18l1-1.73a.5.5 0 00-.18-.68z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
         </button>
         <button class="btn btn-ghost btn-sm" id="btnAI" title="AI Assistant" style="display:none;">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="10" height="8" rx="2"/><path d="M8 2.5v2"/><circle cx="6" cy="8" r=".7" fill="currentColor"/><circle cx="10" cy="8" r=".7" fill="currentColor"/><path d="M6 10.3h4"/></svg>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.9 9.3 5l3.2 1.2-3.2 1.2L8 10.5 6.7 7.4 3.5 6.2 6.7 5 8 1.9z"/><path d="M12.2 9.6 13 11.4l1.8.8-1.8.8-.8 1.8-.8-1.8-1.8-.8 1.8-.8.8-1.8z"/></svg>
           AI
         </button>
       </div>
@@ -1004,8 +1243,8 @@ function renderApp(): void {
       <span class="tipsbar-icon"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.2a4.3 4.3 0 0 0-2.8 7.6c.5.44.8 1.08.8 1.75h4c0-.67.3-1.3.8-1.75A4.3 4.3 0 0 0 8 2.2z"/><path d="M6.4 13.1h3.2M6.8 14.6h2.4"/></svg></span>
       <span class="tipsbar-text" id="tipText"></span>
       <div class="tipsbar-actions">
-        <button class="btn btn-ghost btn-sm" id="btnAllTips" style="font-size:10px;height:20px;padding:0 6px;">All tips</button>
-        <button class="btn btn-ghost btn-icon btn-sm" id="btnCollapseTips" style="width:20px;height:20px;font-size:10px;" title="Collapse">${chevronUpSvg(9)}</button>
+        <button class="btn btn-ghost btn-sm btn-compact-xs" id="btnAllTips">All tips</button>
+        <button class="btn btn-ghost btn-icon btn-sm btn-icon-compact" id="btnCollapseTips" title="Collapse">${chevronUpSvg(9)}</button>
       </div>
     </div>
 
@@ -1015,8 +1254,14 @@ function renderApp(): void {
       <aside class="sidebar-tree shell-panel" id="sidebarTree">
         <div class="sidebar-header">
           <span class="sidebar-header-label">Explorer</span>
-          <button class="btn btn-ghost btn-icon btn-sm" id="btnToggleSidebarTree" style="font-size:12px;padding:4px;" title="Collapse sidebar"></button>
-          <button class="btn btn-ghost btn-sm" id="btnCollapseExplorerSections" style="font-size:10px;height:20px;padding:0 8px;">Collapse all</button>
+          <button class="btn btn-ghost btn-icon btn-sm btn-icon-compact" id="btnToggleSidebarTree" title="Collapse sidebar"></button>
+          <button class="btn btn-ghost btn-sm btn-compact" id="btnCollapseExplorerSections">Collapse all</button>
+        </div>
+        <div class="explorer-tabs" role="tablist" aria-label="Explorer tabs">
+          <button class="explorer-tab active" type="button" role="tab" aria-selected="true" data-explorer-tab="library">Library</button>
+          <button class="explorer-tab" type="button" role="tab" aria-selected="false" data-explorer-tab="folders">Folders</button>
+          <button class="explorer-tab" type="button" role="tab" aria-selected="false" data-explorer-tab="toc">TOC</button>
+          <button class="explorer-tab" type="button" role="tab" aria-selected="false" data-explorer-tab="tags">Tags</button>
         </div>
         <div class="tree-list" id="treeList">
           <div class="tree-section" data-section-id="library">
@@ -1043,18 +1288,11 @@ function renderApp(): void {
             <div class="tree-section-title" data-section-toggle="folders">
               <span>Folders</span>
               <span style="display:flex;align-items:center;gap:6px;">
-                <button class="btn btn-ghost btn-icon btn-sm" id="btnNewFolder" title="New folder" style="width:18px;height:18px;font-size:12px;padding:0;">+</button>
+                <button class="btn btn-ghost btn-icon btn-sm btn-icon-compact" id="btnNewFolder" title="New folder">+</button>
                 <span class="tree-section-caret">▾</span>
               </span>
             </div>
             <div id="foldersList"></div>
-          </div>
-          <div class="tree-section" data-section-id="tags">
-            <div class="tree-section-title" data-section-toggle="tags">
-              <span>Tags</span>
-              <span class="tree-section-caret">▾</span>
-            </div>
-            <div id="tagsList"></div>
           </div>
           <div class="tree-section" id="tocSection" data-section-id="toc" style="display:none;">
             <div class="tree-section-title" data-section-toggle="toc">
@@ -1070,16 +1308,29 @@ function renderApp(): void {
             </div>
             <div id="backlinksList"></div>
           </div>
+          <div class="tree-section tree-section-tags" data-section-id="tags">
+            <div class="tree-section-title" data-section-toggle="tags">
+              <span>Tags</span>
+              <span class="tree-section-caret">▾</span>
+            </div>
+            <div id="tagsList" class="tags-cloud"></div>
+          </div>
         </div>
       </aside>
 
+      <button class="workspace-edge-toggle" id="btnWorkspaceEdgeToggle" title="Hide workspace panel" aria-label="Hide workspace panel">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m10 3-5 5 5 5"/></svg>
+      </button>
       <!-- Sidebar: File List -->
       <aside class="sidebar-filelist shell-panel" id="sidebarFilelist">
         <div class="filelist-header">
           <span class="filelist-header-title" id="filelistHeaderTitle">Notes Tree</span>
-          <button class="btn btn-ghost btn-icon btn-sm" id="btnToggleSidebarFilelist" style="font-size:12px;padding:4px;" title="Collapse sidebar"></button>
+          <button class="btn btn-ghost btn-icon btn-sm btn-icon-compact" id="btnToggleSidebarFilelist" title="Collapse sidebar"></button>
           <div class="filelist-header-controls">
-            <button class="btn btn-ghost btn-sm" id="btnCollapseNoteTree" style="font-size:10px;height:20px;padding:0 8px;">Collapse all</button>
+            <button class="btn btn-ghost btn-sm btn-compact" id="btnCollapseNoteTree">Collapse all</button>
+            <span class="filelist-bulk-count" id="bulkSelectionCount" style="display:none;">0 selected</span>
+            <button class="btn btn-ghost btn-sm btn-compact" id="btnBulkMove" style="display:none;">Move</button>
+            <button class="btn btn-ghost btn-sm btn-compact" id="btnBulkDelete" style="display:none;color:var(--red);">Delete</button>
             <select id="sortSelect" class="shell-select shell-select-sm">
               <option value="modified">Modified</option>
               <option value="created">Created</option>
@@ -1160,7 +1411,7 @@ function renderApp(): void {
             <button class="fmt-btn" data-fmt="codeblock" title="Code Block">[]</button>
             <button class="fmt-btn" data-fmt="quote" title="Blockquote">"</button>
             <span class="fmt-separator"></span>
-            <button class="fmt-btn" data-fmt="link" title="Insert Link (Ctrl+K)"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6.2 9.8 9.8 6.2"/><path d="M5.1 11a2.4 2.4 0 0 1 0-3.4l2.5-2.5a2.4 2.4 0 1 1 3.4 3.4l-.9.9"/><path d="M10.9 5A2.4 2.4 0 0 1 14.3 8.4l-2.5 2.5a2.4 2.4 0 1 1-3.4-3.4l.9-.9"/></svg></button>
+            <button class="fmt-btn" data-fmt="link" title="Insert Link (Ctrl+Shift+K)"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6.2 9.8 9.8 6.2"/><path d="M5.1 11a2.4 2.4 0 0 1 0-3.4l2.5-2.5a2.4 2.4 0 1 1 3.4 3.4l-.9.9"/><path d="M10.9 5A2.4 2.4 0 0 1 14.3 8.4l-2.5 2.5a2.4 2.4 0 1 1-3.4-3.4l.9-.9"/></svg></button>
             <button class="fmt-btn" data-fmt="image" title="Insert Image"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2.2" y="2.8" width="11.6" height="10.4" rx="1.4"/><circle cx="6" cy="6.2" r="1.1"/><path d="m3.8 11 2.8-2.4 2.1 1.7 2.2-2.2 1.3 2.9"/></svg></button>
             <button class="fmt-btn" data-fmt="table" title="Insert Table">▦</button>
             <button class="fmt-btn" data-fmt="mermaid" title="Insert Mermaid Diagram">◈</button>
@@ -1185,6 +1436,25 @@ function renderApp(): void {
               </div>
               <div class="editor-section-body">
                 <textarea id="rawEditorInput" class="raw-editor-input" placeholder="Capture rough ideas, meeting notes, thoughts, and voice transcriptions..."></textarea>
+                <div class="generation-prompt-panel" id="generationPromptPanel">
+                  <button class="generation-prompt-toggle" id="btnToggleGenerationPrompt" type="button" aria-expanded="false">
+                    <span class="generation-prompt-toggle-label">Generation Prompt</span>
+                    <span class="generation-prompt-summary" id="generationPromptSummary">Default prompt</span>
+                  </button>
+                  <div class="generation-prompt-editor" id="generationPromptEditor" hidden>
+                    <label class="generation-prompt-field-label" for="generationPromptSystemInput">System instruction</label>
+                    <textarea id="generationPromptSystemInput" class="generation-prompt-input" rows="3" placeholder="Describe how the model should transform the raw draft into markdown."></textarea>
+                    <label class="generation-prompt-field-label" for="generationPromptTemplateInput">User template</label>
+                    <textarea id="generationPromptTemplateInput" class="generation-prompt-input generation-prompt-template" rows="5" placeholder="Use variables like {{raw}}, {{title}}, and {{markdown}}."></textarea>
+                    <p class="generation-prompt-hint">Variables: <code>{{raw}}</code> <code>{{title}}</code> <code>{{markdown}}</code> <code>{{content}}</code>. Prompt edits are saved per note and take effect on the next regenerate.</p>
+                    <div class="generation-prompt-actions">
+                      <button class="btn btn-ghost btn-sm generation-prompt-library-shortcut" id="btnLoadGenerationPromptFromLibrary" type="button">Load from Prompt Library</button>
+                      <button class="btn btn-ghost btn-sm generation-prompt-library-shortcut" id="btnSaveGenerationPromptToLibrary" type="button">Save to Prompt Library</button>
+                      <button class="btn btn-ghost btn-sm" id="btnResetGenerationPrompt" type="button">Reset to Default</button>
+                      <button class="btn btn-primary btn-sm" id="btnSaveGenerationPrompt" type="button">Save Prompt</button>
+                    </div>
+                  </div>
+                </div>
                 <div class="raw-action-pills" id="rawActionPills" style="display:none;"></div>
               </div>
             </section>
@@ -1215,6 +1485,46 @@ function renderApp(): void {
           </div>
         </div>
       </main>
+
+      <!-- Right Details Panel -->
+      <aside class="note-details-panel shell-panel" id="noteDetailsPanel">
+        <div class="note-details-header">Note Details</div>
+        <div class="note-details-body">
+          <section class="note-details-section" id="noteDetailsTocSection">
+            <div class="note-details-section-title">Table of Contents</div>
+            <div class="note-details-list" id="noteDetailsTocList">
+              <p class="note-details-empty">Open a note to see its table of contents.</p>
+            </div>
+          </section>
+
+          <section class="note-details-section" id="noteDetailsBacklinksSection" style="display:none;">
+            <div class="note-details-section-title">Linked Mentions</div>
+            <div class="note-details-list" id="noteDetailsBacklinksList"></div>
+          </section>
+
+          <section class="note-details-section">
+            <div class="note-details-section-title">Properties</div>
+            <div class="note-details-props">
+              <div class="note-prop-row">
+                <span class="note-prop-label">Status</span>
+                <span class="note-prop-value"><span class="note-prop-badge" id="noteDetailsStatus">Idle</span></span>
+              </div>
+              <div class="note-prop-row">
+                <span class="note-prop-label">Updated</span>
+                <span class="note-prop-value" id="noteDetailsUpdated">-</span>
+              </div>
+              <div class="note-prop-row">
+                <span class="note-prop-label">Folder</span>
+                <span class="note-prop-value" id="noteDetailsFolder">-</span>
+              </div>
+              <div class="note-prop-row">
+                <span class="note-prop-label">Tags</span>
+                <span class="note-prop-value" id="noteDetailsTags">-</span>
+              </div>
+            </div>
+          </section>
+        </div>
+      </aside>
 
       <!-- AI Panel (slide-out) -->
       <aside class="ai-panel" id="aiPanel">
@@ -1250,13 +1560,18 @@ function renderApp(): void {
             <span style="flex:1;"></span>
             <button class="btn btn-ghost btn-sm" id="btnPromptLibrary" title="Prompt Library" style="font-size:11px;">Prompt Library</button>
           </div>
-          <div style="display:flex;gap:6px;">
+          <div class="ai-compose-wrapper">
             <textarea id="aiInput" class="ai-textarea" placeholder="Ask about your note or type a prompt…" rows="2"></textarea>
-            <div style="display:flex;flex-direction:column;gap:4px;">
-              <button class="btn btn-primary btn-sm" id="btnAISend" title="Send"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M3 2.5 13.5 8 3 13.5 4.8 8z"/></svg></button>
-              <button class="btn btn-ghost btn-sm" id="btnAIStop" title="Stop" style="display:none;color:var(--red);"><svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><rect x="4" y="4" width="8" height="8" rx="1"/></svg></button>
+            <div class="ai-inline-actions">
+              <button class="btn btn-ghost btn-sm ai-voice-btn ai-voice-active" id="btnAIVoiceOutput" title="Voice output on" aria-label="Toggle AI voice output" aria-pressed="true"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 6h2l3-3v10l-3-3H3z"/><path d="M10 5.5a3.5 3.5 0 0 1 0 5"/></svg></button>
+              <button class="btn btn-primary btn-sm ai-converse-btn" id="btnAIConverse" title="Converse" aria-label="Converse with AI"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.2" width="4" height="7.1" rx="2"/><path d="M4 7.9a4 4 0 0 0 8 0M8 11.9V14M6.4 14h3.2"/></svg></button>
             </div>
           </div>
+          <div class="ai-compose-footer">
+            <button class="btn btn-ghost btn-sm ai-attach-btn" id="btnAIAttach" title="Attach file for analysis" aria-label="Attach file for analysis"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5.4 8.6 3.8-3.8a2.2 2.2 0 1 1 3.1 3.1L7.8 12.5a3.1 3.1 0 0 1-4.4-4.4l5-5"/></svg></button>
+            <div id="aiAttachmentTray" class="ai-attachment-tray" style="display:none;"></div>
+          </div>
+          <input id="aiAttachInput" type="file" accept=".pdf,.docx,.png,.jpg,.jpeg,.webp,.gif,.bmp,.tiff" style="display:none;" />
         </div>
       </aside>
     </div>
@@ -1264,7 +1579,7 @@ function renderApp(): void {
     <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
     <button class="ai-fab" id="btnAIFab" title="AI Assistant" aria-label="Open AI Assistant" aria-expanded="false">
-      <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="10" height="8" rx="2"/><path d="M8 2.5v2"/><circle cx="6" cy="8" r=".7" fill="currentColor"/><circle cx="10" cy="8" r=".7" fill="currentColor"/><path d="M6 10.3h4"/></svg>
+      <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.9 9.3 5l3.2 1.2-3.2 1.2L8 10.5 6.7 7.4 3.5 6.2 6.7 5 8 1.9z"/><path d="M12.2 9.6 13 11.4l1.8.8-1.8.8-.8 1.8-.8-1.8-1.8-.8 1.8-.8.8-1.8z"/></svg>
       <span>AI</span>
     </button>
 
@@ -1275,19 +1590,40 @@ function renderApp(): void {
         <span id="statusText">Ready</span>
       </div>
       <div class="statusbar-right">
-        <button class="btn btn-ghost btn-sm" id="btnSync" title="Sync now" style="font-size:10px;height:18px;padding:0 6px;"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13.5 8a5.5 5.5 0 1 1-1.8-4.1"/><path d="M13.5 3.4v2.8h-2.8"/></svg>Sync</button>
+        <button class="btn btn-ghost btn-icon btn-sm statusbar-details-toggle" id="btnStatusbarDetails" title="Toggle status details" aria-expanded="false">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.2 5.4 8 10.2l4.8-4.8"/></svg>
+        </button>
+        <select id="syncProviderQuickSelect" class="shell-select shell-select-sm statusbar-provider-select" title="Sync provider">
+          <option value="gdrive">Google Drive</option>
+          <option value="onedrive">OneDrive</option>
+          <option value="dropbox">Dropbox</option>
+        </select>
+        <button class="btn btn-ghost btn-sm statusbar-sync-btn" id="btnSync" title="Sync now"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13.5 8a5.5 5.5 0 1 1-1.8-4.1"/><path d="M13.5 3.4v2.8h-2.8"/></svg>Sync</button>
         <span class="sync-state-chip synced" id="syncStateChip"><span class="sync-state-chip-dot"></span><span id="syncStateChipText">Synced</span></span>
-        <span id="syncStatus" class="sync-status-detail">All changes up to date</span>
-        <span id="wordCount"></span>
-        <span class="perf-indicator"><span class="perf-dot" id="perfDot"></span><span id="perfLabel">OK</span></span>
-        <span id="cursorPos">Ln 1, Col 1</span>
-        <span>Zed Note v1.0.0</span>
+        <div class="statusbar-secondary" id="statusbarSecondary">
+          <span id="syncStatus" class="sync-status-detail">All changes up to date</span>
+          <span id="wordCount"></span>
+          <span class="perf-indicator"><span class="perf-dot" id="perfDot"></span><span id="perfLabel">OK</span></span>
+          <span id="cursorPos">Ln 1, Col 1</span>
+          <span>Zed Note v1.0.0</span>
+        </div>
       </div>
     </footer>
 
+    <div class="modal-overlay" id="commandPaletteOverlay" style="display:none;">
+      <div class="modal-dialog command-palette-dialog" role="dialog" aria-modal="true" aria-label="Command Palette">
+        <div class="command-palette-head">
+          <span>Quick Actions</span>
+          <span class="command-palette-kbd">Ctrl+K</span>
+        </div>
+        <input type="text" id="commandPaletteInput" class="command-palette-input" placeholder="Type a command..." autocomplete="off" />
+        <div class="command-palette-list" id="commandPaletteList"></div>
+      </div>
+    </div>
+
     <!-- Settings Modal -->
     <div class="modal-overlay" id="settingsOverlay" style="display:none;">
-      <div class="modal-dialog settings-modal-shell" style="width:560px;max-height:80vh;overflow:hidden;display:flex;flex-direction:column;">
+      <div class="modal-dialog settings-modal-shell" style="width:640px;max-height:84vh;overflow:hidden;display:flex;flex-direction:column;">
         <div style="display:flex;justify-content:space-between;align-items:center;padding:16px;border-bottom:1px solid var(--border);">
           <h3 style="margin:0;font-size:15px;font-weight:600;">Settings</h3>
           <button class="btn btn-ghost btn-icon btn-sm" id="btnCloseSettings" style="font-size:14px;">×</button>
@@ -1297,6 +1633,8 @@ function renderApp(): void {
           <button class="btn btn-sm settings-tab-btn" type="button" data-settings-tab-button="sync">Sync & Backup</button>
           <button class="btn btn-sm settings-tab-btn" type="button" data-settings-tab-button="ai">AI</button>
           <button class="btn btn-sm settings-tab-btn" type="button" data-settings-tab-button="security">Security</button>
+          <button class="btn btn-sm settings-tab-btn" type="button" data-settings-tab-button="shortcuts">Shortcuts</button>
+          <button class="btn btn-sm settings-tab-btn" type="button" data-settings-tab-button="accessibility">Accessibility</button>
         </div>
         <div class="settings-panels" style="padding:16px;display:flex;flex-direction:column;gap:16px;overflow-y:auto;">
           <section class="settings-tab-panel" data-settings-tab="sync" style="display:none;">
@@ -1310,7 +1648,6 @@ function renderApp(): void {
               </div>
               <div id="syncProviderGuide" style="margin-top:10px;border:1px solid var(--border);border-radius:8px;padding:10px;background:var(--bg3);"></div>
               <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
-                <input type="text" id="syncClientIdInput" placeholder="Paste OAuth Client ID" autocomplete="off" style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text);font-size:12px;" />
                 <button class="btn btn-primary btn-sm" id="btnConnectSelectedProvider">Connect</button>
               </div>
               <div id="syncProviderStatus" style="margin-top:8px;font-size:11px;color:var(--text3);"></div>
@@ -1322,13 +1659,53 @@ function renderApp(): void {
 
             <fieldset style="border:1px solid var(--border);border-radius:8px;padding:12px;margin-top:16px;">
               <legend style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Backup</legend>
-              <p style="font-size:11px;color:var(--text3);margin:0 0 10px;">Export all notes as a ZIP archive or import from a backup.</p>
-              <div style="display:flex;gap:8px;">
-                <button class="btn btn-primary btn-sm" id="btnExport">Export ZIP</button>
-                <button class="btn btn-ghost btn-sm" id="btnImport">Import ZIP</button>
-                <input type="file" id="importFileInput" accept=".zip" style="display:none;" />
+
+              <!-- Stat pills -->
+              <div class="backup-stat-row">
+                <span class="backup-stat-pill" id="backupStatDate">Last export: —</span>
+                <span class="backup-stat-pill" id="backupStatCount">— notes</span>
               </div>
-              <div id="backupStatus" style="margin-top:8px;font-size:11px;color:var(--text3);"></div>
+
+              <!-- Scope selector -->
+              <p style="font-size:11px;font-weight:600;margin:12px 0 6px;">Export scope</p>
+              <div class="backup-scope-row">
+                <label class="backup-scope-card active" id="backupScopeAllCard">
+                  <input type="radio" name="backupScope" value="all" checked style="display:none;" />
+                  <span class="backup-scope-check">✓</span>
+                  <span class="backup-scope-label">All Notes</span>
+                </label>
+                <label class="backup-scope-card" id="backupScopePinnedCard">
+                  <input type="radio" name="backupScope" value="pinned" style="display:none;" />
+                  <span class="backup-scope-check">✓</span>
+                  <span class="backup-scope-label">Pinned Only</span>
+                </label>
+              </div>
+
+              <!-- Export button -->
+              <div style="display:flex;align-items:center;gap:8px;margin-top:12px;">
+                <button class="btn btn-primary btn-sm" id="btnExport">
+                  Generate ZIP <span id="exportSpinner" style="display:none;">…</span>
+                </button>
+              </div>
+
+              <!-- Backup activity log -->
+              <p style="font-size:11px;font-weight:600;margin:16px 0 6px;">Activity log</p>
+              <table class="backup-log-table">
+                <thead>
+                  <tr><th>Type</th><th>Date</th><th>Details</th><th>Status</th></tr>
+                </thead>
+                <tbody id="backupLogTbody"></tbody>
+              </table>
+              <p id="backupLogEmpty" style="font-size:11px;color:var(--text3);margin:6px 0 0;">No activity yet.</p>
+
+              <!-- Restore section -->
+              <p style="font-size:11px;font-weight:600;margin:16px 0 6px;">Restore from backup</p>
+              <div id="backupDropzone" class="backup-dropzone" role="button" tabindex="0" aria-label="Click or drag a ZIP to restore">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.5;margin-bottom:6px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <span>Click or drag a <code>.zip</code> to restore</span>
+              </div>
+              <input type="file" id="importFileInput" accept=".zip" style="display:none;" />
+              <div id="restoreStatus" style="margin-top:6px;font-size:11px;color:var(--text3);"></div>
             </fieldset>
           </section>
 
@@ -1377,7 +1754,7 @@ function renderApp(): void {
               <legend style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">About</legend>
               <p style="font-size:11px;color:var(--text3);margin:0;">Zed Note v1.0.0</p>
               <p style="font-size:10px;color:var(--text3);margin:4px 0 0;">AI-assisted note-taking PWA with offline-first architecture.</p>
-              <button class="btn btn-ghost btn-sm" id="btnKeyboardShortcuts" style="margin-top:8px;font-size:11px;">Keyboard Shortcuts</button>
+              <button class="btn btn-ghost btn-sm" id="btnKeyboardShortcuts" style="margin-top:8px;font-size:11px;">Keyboard Shortcuts ↗</button>
             </fieldset>
           </section>
 
@@ -1388,6 +1765,78 @@ function renderApp(): void {
               <div style="display:flex;gap:8px;align-items:center;">
                 <button class="btn btn-primary btn-sm" id="btnEnrollPasskey">Add Passkey</button>
                 <span id="passkeyEnrollmentStatus" style="font-size:11px;color:var(--text3);">Checking availability...</span>
+              </div>
+            </fieldset>
+          </section>
+
+          <!-- ── Shortcuts Tab ──────────────────────────────────── -->
+          <section class="settings-tab-panel" data-settings-tab="shortcuts" style="display:none;">
+            <div style="margin-bottom:12px;">
+              <p style="font-size:11px;color:var(--text3);margin:0 0 10px;">Master the editor with these key bindings. Press any key combo in the app to trigger it.</p>
+              <!-- Search -->
+              <div class="shortcut-search-wrap">
+                <svg class="shortcut-search-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.75" stroke="currentColor" stroke-width="1.5"/><path d="M13 13l3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                <input type="text" id="shortcutSearchInput" class="shortcut-search-input" placeholder="Search commands or shortcuts…" autocomplete="off" />
+              </div>
+              <!-- Category filters -->
+              <div class="shortcut-filter-bar" id="shortcutFilterBar">
+                <button class="shortcut-filter-btn active" data-shortcut-category="all">All</button>
+                <button class="shortcut-filter-btn" data-shortcut-category="General">General</button>
+                <button class="shortcut-filter-btn" data-shortcut-category="Navigation">Navigation</button>
+                <button class="shortcut-filter-btn" data-shortcut-category="Editor &amp; Formatting">Editor &amp; Formatting</button>
+                <button class="shortcut-filter-btn" data-shortcut-category="Templates">Templates</button>
+                <button class="shortcut-filter-btn" data-shortcut-category="AI">AI</button>
+              </div>
+            </div>
+            <!-- Shortcut rows – rendered by JS into this container -->
+            <div class="shortcut-list" id="shortcutList"></div>
+          </section>
+
+          <!-- ── Accessibility Tab ──────────────────────────────── -->
+          <section class="settings-tab-panel" data-settings-tab="accessibility" style="display:none;">
+            <fieldset style="border:1px solid var(--border);border-radius:8px;padding:12px;">
+              <legend style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Font Scale</legend>
+              <p style="font-size:11px;color:var(--text3);margin:0 0 10px;">Adjust the editor and UI text size.</p>
+              <div style="display:flex;align-items:center;gap:12px;">
+                <span style="font-size:11px;color:var(--text2);">A</span>
+                <input type="range" id="fontScaleRange" min="80" max="130" step="5" value="100"
+                       style="flex:1;accent-color:var(--accent);" aria-label="Font scale percentage" />
+                <span style="font-size:15px;color:var(--text2);">A</span>
+                <span id="fontScaleLabel" style="font-size:11px;color:var(--text3);min-width:36px;text-align:right;">100%</span>
+              </div>
+            </fieldset>
+
+            <fieldset style="border:1px solid var(--border);border-radius:8px;padding:12px;margin-top:12px;">
+              <legend style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Display</legend>
+              <label class="a11y-toggle-row">
+                <span class="a11y-toggle-label">
+                  <span style="font-size:12px;font-weight:500;">High Contrast</span>
+                  <span style="font-size:11px;color:var(--text3);display:block;margin-top:2px;">Increases contrast ratios for text and borders</span>
+                </span>
+                <input type="checkbox" id="highContrastToggle" class="a11y-toggle" role="switch" />
+              </label>
+              <label class="a11y-toggle-row" style="margin-top:10px;">
+                <span class="a11y-toggle-label">
+                  <span style="font-size:12px;font-weight:500;">Reduce Motion</span>
+                  <span style="font-size:11px;color:var(--text3);display:block;margin-top:2px;">Minimises animation and transition effects</span>
+                </span>
+                <input type="checkbox" id="reduceMotionToggle" class="a11y-toggle" role="switch" />
+              </label>
+              <label class="a11y-toggle-row" style="margin-top:10px;">
+                <span class="a11y-toggle-label">
+                  <span style="font-size:12px;font-weight:500;">Focus Ring Always Visible</span>
+                  <span style="font-size:11px;color:var(--text3);display:block;margin-top:2px;">Show keyboard focus outlines even when using a mouse</span>
+                </span>
+                <input type="checkbox" id="focusRingToggle" class="a11y-toggle" role="switch" />
+              </label>
+            </fieldset>
+
+            <fieldset style="border:1px solid var(--border);border-radius:8px;padding:12px;margin-top:12px;">
+              <legend style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Screen Reader</legend>
+              <p style="font-size:11px;color:var(--text3);margin:0 0 8px;">Live region announcements are active when using a screen reader.</p>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <button class="btn btn-ghost btn-sm" id="btnA11yAnnounceTest" style="font-size:11px;">Test announcement</button>
+                <span id="a11yTestStatus" style="font-size:11px;color:var(--text3);"></span>
               </div>
             </fieldset>
           </section>
@@ -1597,8 +2046,12 @@ async function init(): Promise<void> {
 
   // Render shell
   renderApp();
+  mergeWorkspacePanels();
+  setWorkspacePanelHidden(false);
+  document.getElementById('btnWorkspaceEdgeToggle')?.addEventListener('click', () => setWorkspacePanelHidden(!workspacePanelHidden));
   modernizeDialogCloseIcons();
   wireCollapsibleExplorerSections();
+  wireExplorerTabs();
 
   // Init tips
   initTips((tip: Tip) => {
@@ -1643,8 +2096,7 @@ async function init(): Promise<void> {
   document.getElementById('btnNewFolder')?.addEventListener('click', createFolder);
 
   document.getElementById('btnCollapseExplorerSections')?.addEventListener('click', () => {
-    const sections = Array.from(document.querySelectorAll<HTMLElement>('.tree-section[data-section-id]'))
-      .filter(section => section.style.display !== 'none');
+    const sections = getVisibleExplorerSections();
     const allCollapsed = sections.length > 0 && sections.every(section => section.classList.contains('collapsed'));
     sections.forEach(section => {
       const sectionId = section.dataset.sectionId;
@@ -1675,7 +2127,7 @@ async function init(): Promise<void> {
 
   document.getElementById('btnToggleSidebarFilelist')?.addEventListener('click', () => {
     sidebarFilelistCollapsed = !sidebarFilelistCollapsed;
-    const sidebar = document.getElementById('sidebarFilelist');
+    const sidebar = document.getElementById('sidebarFilelist') ?? document.getElementById('sidebarTree');
     const btn = document.getElementById('btnToggleSidebarFilelist');
     if (sidebar) {
       sidebar.classList.toggle('collapsed', sidebarFilelistCollapsed);
@@ -1697,6 +2149,42 @@ async function init(): Promise<void> {
       else collapsedNoteTreeFolders.add(key);
     });
     await refreshFileList();
+  });
+
+  document.getElementById('btnBulkMove')?.addEventListener('click', async () => {
+    if (selectedNoteIds.size === 0) return;
+    const ids = [...selectedNoteIds];
+    const folders = await db.folders.orderBy('order').toArray();
+    const names = ['(Unfiled)', ...folders.map((f) => f.name)];
+    const choice = prompt(`Move selected notes to:\n${names.map((name, i) => `${i}. ${name}`).join('\n')}\n\nEnter number:`);
+    if (choice == null) return;
+    const idx = Number.parseInt(choice, 10);
+    if (Number.isNaN(idx) || idx < 0 || idx > folders.length) return;
+    const folderId = idx === 0 ? null : (folders[idx - 1]?.id ?? null);
+    await moveNotesToFolder(ids, folderId);
+    clearNoteSelection();
+    setStatus(`Moved ${ids.length} note${ids.length === 1 ? '' : 's'}`);
+  });
+
+  document.getElementById('btnBulkDelete')?.addEventListener('click', async () => {
+    if (selectedNoteIds.size === 0) return;
+    const ids = [...selectedNoteIds];
+    if (!confirm(`Delete ${ids.length} selected note${ids.length === 1 ? '' : 's'}? This cannot be undone.`)) return;
+    for (const noteId of ids) {
+      removeFromIndex(noteId);
+      await db.notes.delete(noteId);
+      await deleteRemoteNoteFromFirestore(noteId);
+      if (currentNote?.id === noteId) {
+        currentNote = null;
+        editor = null;
+      }
+    }
+    clearNoteSelection();
+    document.getElementById('editorContainer')!.style.display = currentNote ? 'flex' : 'none';
+    document.getElementById('emptyState')!.style.display = currentNote ? 'none' : '';
+    if (!currentNote) document.getElementById('editorPane')!.innerHTML = '';
+    await refreshFileList();
+    setStatus(`Deleted ${ids.length} note${ids.length === 1 ? '' : 's'}`);
   });
   // Wire "All Notes" as a drop target for removing note from folder
   wireAllNotesDrop();
@@ -1743,6 +2231,45 @@ async function init(): Promise<void> {
     if (currentNote) currentNote.markdownDirty = false;
     const raw = getRawEditorValue();
     void generateMarkdownFromRaw(raw);
+  });
+
+  document.getElementById('btnToggleGenerationPrompt')?.addEventListener('click', () => {
+    const toggle = document.getElementById('btnToggleGenerationPrompt');
+    const editorEl = document.getElementById('generationPromptEditor');
+    if (!toggle || !editorEl) return;
+    const expanded = toggle.getAttribute('aria-expanded') === 'true';
+    toggle.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+    editorEl.hidden = expanded;
+  });
+
+  const handleGenerationPromptInput = () => {
+    syncGenerationPromptDraftFromInputs();
+    queueSilentNoteSave();
+  };
+  getGenerationPromptSystemInput()?.addEventListener('input', handleGenerationPromptInput);
+  getGenerationPromptTemplateInput()?.addEventListener('input', handleGenerationPromptInput);
+
+  document.getElementById('btnResetGenerationPrompt')?.addEventListener('click', () => {
+    const systemInput = getGenerationPromptSystemInput();
+    const templateInput = getGenerationPromptTemplateInput();
+    if (systemInput) systemInput.value = DEFAULT_MARKDOWN_PROMPT_SYSTEM;
+    if (templateInput) templateInput.value = DEFAULT_MARKDOWN_PROMPT_TEMPLATE;
+    syncGenerationPromptDraftFromInputs();
+    queueSilentNoteSave(0);
+  });
+
+  document.getElementById('btnSaveGenerationPrompt')?.addEventListener('click', async () => {
+    syncGenerationPromptDraftFromInputs();
+    await saveCurrentNote(true);
+    setStatus('Generation prompt saved');
+  });
+
+  document.getElementById('btnLoadGenerationPromptFromLibrary')?.addEventListener('click', () => {
+    void loadGenerationPromptFromLibrary();
+  });
+
+  document.getElementById('btnSaveGenerationPromptToLibrary')?.addEventListener('click', () => {
+    void saveGenerationPromptToLibraryFromNote();
   });
 
   document.getElementById('rawEditorInput')?.addEventListener('input', (e: Event) => {
@@ -1811,9 +2338,13 @@ async function init(): Promise<void> {
       e.preventDefault();
       createNewNote();
     }
-    if ((e.ctrlKey || e.metaKey) && e.key === 'k' && editor) {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k' && e.shiftKey && editor) {
       e.preventDefault();
       handleFormat('link');
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k' && !e.shiftKey) {
+      e.preventDefault();
+      openCommandPalette();
     }
     if ((e.ctrlKey || e.metaKey) && e.key === 'b' && editor) {
       e.preventDefault();
@@ -1836,6 +2367,31 @@ async function init(): Promise<void> {
       e.preventDefault();
       document.getElementById('searchInput')?.focus();
     }
+    if (e.key === 'Escape') {
+      closeCommandPalette();
+    }
+  });
+
+  const commandPaletteInput = document.getElementById('commandPaletteInput') as HTMLInputElement | null;
+  commandPaletteInput?.addEventListener('input', () => {
+    renderCommandPaletteList(commandPaletteInput.value);
+  });
+  commandPaletteInput?.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      const firstEnabled = document.querySelector<HTMLElement>('.command-palette-item:not(.disabled)');
+      firstEnabled?.click();
+    }
+  });
+  document.getElementById('commandPaletteOverlay')?.addEventListener('click', (e: Event) => {
+    if ((e.target as HTMLElement).id === 'commandPaletteOverlay') closeCommandPalette();
+  });
+
+  document.getElementById('btnStatusbarDetails')?.addEventListener('click', () => {
+    const app = document.getElementById('app');
+    const btn = document.getElementById('btnStatusbarDetails');
+    if (!app || !btn) return;
+    const opened = app.classList.toggle('statusbar-details-open');
+    btn.setAttribute('aria-expanded', String(opened));
   });
 
   // Online/offline detection
@@ -1854,6 +2410,7 @@ async function init(): Promise<void> {
       const tab = btn.dataset.settingsTabButton as SettingsTabId | undefined;
       if (!tab) return;
       switchSettingsTab(tab);
+      if (tab === 'sync') { renderBackupLog(); updateBackupStats(); }
     });
   });
   document.getElementById('btnEnrollPasskey')?.addEventListener('click', async () => {
@@ -1885,8 +2442,20 @@ async function init(): Promise<void> {
   document.getElementById('btnDisconnectSync')?.addEventListener('click', disconnectSync);
   document.getElementById('btnForceSyncSettings')?.addEventListener('click', () => doSync());
 
+  document.getElementById('syncProviderQuickSelect')?.addEventListener('change', (e) => {
+    const selected = (e.target as HTMLSelectElement).value as SyncProviderType;
+    setSyncProviderSelection(selected);
+  });
+
   // ─── Sync button in statusbar ───
-  document.getElementById('btnSync')?.addEventListener('click', () => doSync());
+  document.getElementById('btnSync')?.addEventListener('click', async () => {
+    const provider = syncEngine.getProvider();
+    if (!provider || !provider.isAuthenticated()) {
+      await connectProvider(selectedSyncProviderType);
+      return;
+    }
+    await doSync();
+  });
 
   // ─── Sync engine state listener ───
   syncEngine.onStateChange((state, msg) => {
@@ -1907,40 +2476,146 @@ async function init(): Promise<void> {
   await restoreSyncProvider();
 
   // ─── Backup: Export / Import ───
-  document.getElementById('btnExport')?.addEventListener('click', async () => {
-    const statusEl = document.getElementById('backupStatus');
-    if (statusEl) statusEl.textContent = 'Exporting…';
-    try {
-      const blob = await exportToZip();
-      const date = new Date().toISOString().slice(0, 10);
-      downloadBlob(blob, `zed-note-backup-${date}.zip`);
-      if (statusEl) statusEl.textContent = 'Export complete!';
-    } catch (err) {
-      if (statusEl) statusEl.textContent = `Export failed: ${err instanceof Error ? err.message : 'error'}`;
+  // ─── Backup log helpers ───
+  interface BackupLogEntry {
+    type: 'export' | 'restore';
+    date: string;
+    details: string;
+    status: 'success' | 'failed';
+  }
+  const BACKUP_LOG_KEY = 'backupLog';
+
+  function getBackupLog(): BackupLogEntry[] {
+    try { return JSON.parse(localStorage.getItem(BACKUP_LOG_KEY) ?? '[]'); }
+    catch { return []; }
+  }
+
+  function addBackupLog(entry: BackupLogEntry): void {
+    const log = getBackupLog();
+    log.unshift(entry);
+    localStorage.setItem(BACKUP_LOG_KEY, JSON.stringify(log.slice(0, 50)));
+  }
+
+  function renderBackupLog(): void {
+    const tbody = document.getElementById('backupLogTbody');
+    const empty = document.getElementById('backupLogEmpty');
+    if (!tbody) return;
+    const log = getBackupLog();
+    if (log.length === 0) {
+      tbody.innerHTML = '';
+      if (empty) empty.style.display = '';
+      return;
     }
+    if (empty) empty.style.display = 'none';
+    tbody.innerHTML = log.map(e => {
+      const badgeClass = e.status === 'success'
+        ? (e.type === 'restore' ? 'backup-log-badge-restore' : 'backup-log-badge-success')
+        : 'backup-log-badge-failed';
+      return `<tr>
+        <td style="text-transform:capitalize;">${e.type}</td>
+        <td style="white-space:nowrap;">${e.date}</td>
+        <td>${e.details}</td>
+        <td><span class="backup-log-badge ${badgeClass}">${e.status}</span></td>
+      </tr>`;
+    }).join('');
+  }
+
+  function updateBackupStats(): void {
+    const log = getBackupLog();
+    const lastExport = log.find(e => e.type === 'export' && e.status === 'success');
+    const datePill = document.getElementById('backupStatDate');
+    const countPill = document.getElementById('backupStatCount');
+    if (datePill) datePill.textContent = lastExport ? `Last export: ${lastExport.date}` : 'Last export: —';
+    if (countPill) {
+      const match = lastExport?.details.match(/(\d+) note/);
+      countPill.textContent = match ? `${match[1]} notes` : '— notes';
+    }
+  }
+
+  // ─── Backup: scope radio cards ───
+  document.querySelectorAll<HTMLInputElement>('input[name="backupScope"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      document.getElementById('backupScopeAllCard')?.classList.toggle('active', radio.value === 'all' ? radio.checked : !radio.checked);
+      document.getElementById('backupScopePinnedCard')?.classList.toggle('active', radio.value === 'pinned' ? radio.checked : !radio.checked);
+    });
   });
 
-  document.getElementById('btnImport')?.addEventListener('click', () => {
-    (document.getElementById('importFileInput') as HTMLInputElement).click();
+  // ─── Backup: Export ───
+  document.getElementById('btnExport')?.addEventListener('click', async () => {
+    const spinner = document.getElementById('exportSpinner');
+    const btnExport = document.getElementById('btnExport') as HTMLButtonElement | null;
+    if (spinner) spinner.style.display = '';
+    if (btnExport) btnExport.disabled = true;
+    const scopeInput = document.querySelector<HTMLInputElement>('input[name="backupScope"]:checked');
+    const scope = (scopeInput?.value ?? 'all') as ExportOptions['scope'];
+    try {
+      const blob = await exportToZip({ scope });
+      const date = new Date().toISOString().slice(0, 10);
+      const filename = `qp-notes-backup-${scope === 'pinned' ? 'pinned-' : ''}${date}.zip`;
+      downloadBlob(blob, filename);
+      const sizeKb = Math.round(blob.size / 1024);
+      const noteCount = (await db.notes.toArray()).length;
+      addBackupLog({ type: 'export', date, details: `${noteCount} notes · ${sizeKb} KB · scope: ${scope}`, status: 'success' });
+    } catch (err) {
+      const date = new Date().toISOString().slice(0, 10);
+      addBackupLog({ type: 'export', date, details: err instanceof Error ? err.message : 'unknown error', status: 'failed' });
+    } finally {
+      if (spinner) spinner.style.display = 'none';
+      if (btnExport) btnExport.disabled = false;
+    }
+    renderBackupLog();
+    updateBackupStats();
   });
 
-  document.getElementById('importFileInput')?.addEventListener('change', async (e: Event) => {
-    const file = (e.target as HTMLInputElement).files?.[0];
-    if (!file) return;
-    const statusEl = document.getElementById('backupStatus');
-    if (statusEl) statusEl.textContent = 'Importing…';
+  // ─── Backup: Restore (file input + dropzone) ───
+  async function handleRestoreFile(file: File): Promise<void> {
+    const statusEl = document.getElementById('restoreStatus');
+    if (statusEl) statusEl.textContent = 'Restoring…';
+    const date = new Date().toISOString().slice(0, 10);
     try {
       const result = await importFromZip(file);
-      if (statusEl) {
-        statusEl.textContent = `Imported ${result.notesImported} notes, ${result.foldersCreated} folders.${result.errors.length ? ` (${result.errors.length} errors)` : ''}`;
-      }
+      const detail = `${result.notesImported} notes, ${result.foldersCreated} folders` +
+        (result.errors.length ? ` (${result.errors.length} errors)` : '');
+      if (statusEl) statusEl.textContent = `Restored: ${detail}`;
+      addBackupLog({ type: 'restore', date, details: detail, status: 'success' });
       await refreshFileList();
       await refreshFolders();
       await buildSearchIndex();
     } catch (err) {
-      if (statusEl) statusEl.textContent = `Import failed: ${err instanceof Error ? err.message : 'error'}`;
+      const msg = err instanceof Error ? err.message : 'error';
+      if (statusEl) statusEl.textContent = `Restore failed: ${msg}`;
+      addBackupLog({ type: 'restore', date, details: msg, status: 'failed' });
     }
+    renderBackupLog();
+    updateBackupStats();
+  }
+
+  document.getElementById('importFileInput')?.addEventListener('change', async (e: Event) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    await handleRestoreFile(file);
     (e.target as HTMLInputElement).value = '';
+  });
+
+  const dropzone = document.getElementById('backupDropzone');
+  dropzone?.addEventListener('click', () => {
+    (document.getElementById('importFileInput') as HTMLInputElement | null)?.click();
+  });
+  dropzone?.addEventListener('keydown', (e: Event) => {
+    if ((e as KeyboardEvent).key === 'Enter' || (e as KeyboardEvent).key === ' ') {
+      (document.getElementById('importFileInput') as HTMLInputElement | null)?.click();
+    }
+  });
+  dropzone?.addEventListener('dragover', (e: Event) => {
+    e.preventDefault();
+    dropzone.classList.add('dragging');
+  });
+  dropzone?.addEventListener('dragleave', () => dropzone.classList.remove('dragging'));
+  dropzone?.addEventListener('drop', async (e: Event) => {
+    e.preventDefault();
+    dropzone.classList.remove('dragging');
+    const file = (e as DragEvent).dataTransfer?.files?.[0];
+    if (file) await handleRestoreFile(file);
   });
 
   // ─── History modal ───
@@ -1972,12 +2647,51 @@ async function init(): Promise<void> {
   document.getElementById('modelCatalogOverlay')?.addEventListener('click', (e: Event) => {
     if ((e.target as HTMLElement).id === 'modelCatalogOverlay') closeModelCatalog();
   });
-  document.getElementById('btnAISend')?.addEventListener('click', () => {
-    void sendAIMessage();
+  document.getElementById('btnAIConverse')?.addEventListener('click', () => {
+    void handleAIConverseAction();
   });
-  document.getElementById('btnAIStop')?.addEventListener('click', () => {
-    void abortAIGeneration();
+
+  document.getElementById('btnAIAttach')?.addEventListener('click', () => {
+    (document.getElementById('aiAttachInput') as HTMLInputElement | null)?.click();
   });
+
+  document.getElementById('aiAttachInput')?.addEventListener('change', async (e: Event) => {
+    const inputEl = e.target as HTMLInputElement;
+    const file = inputEl.files?.[0];
+    if (!file) return;
+    await attachFileToAIChat(file);
+    inputEl.value = '';
+  });
+
+  document.getElementById('aiAttachmentTray')?.addEventListener('click', (e: Event) => {
+    const target = e.target as HTMLElement;
+    const removeBtn = target.closest<HTMLElement>('[data-remove-ai-attachment]');
+    if (!removeBtn) return;
+    pendingAIAttachment = null;
+    renderPendingAIAttachment();
+    updateAIComposerUI();
+  });
+
+  const btnAIVoiceOutput = document.getElementById('btnAIVoiceOutput') as HTMLButtonElement | null;
+  if (btnAIVoiceOutput) {
+    if (!isTtsSupported()) {
+      btnAIVoiceOutput.title = 'Text-to-speech not supported in this browser';
+      btnAIVoiceOutput.disabled = true;
+      btnAIVoiceOutput.style.opacity = '0.4';
+      aiVoiceOutputEnabled = false;
+      btnAIVoiceOutput.classList.remove('ai-voice-active');
+      btnAIVoiceOutput.setAttribute('aria-pressed', 'false');
+    } else {
+      btnAIVoiceOutput.addEventListener('click', () => {
+        aiVoiceOutputEnabled = !aiVoiceOutputEnabled;
+        btnAIVoiceOutput.classList.toggle('ai-voice-active', aiVoiceOutputEnabled);
+        btnAIVoiceOutput.setAttribute('aria-pressed', String(aiVoiceOutputEnabled));
+        btnAIVoiceOutput.title = aiVoiceOutputEnabled ? 'Voice output on' : 'Voice output off';
+        if (!aiVoiceOutputEnabled) stopTts();
+        announce(`AI voice output ${aiVoiceOutputEnabled ? 'enabled' : 'disabled'}`);
+      });
+    }
+  }
 
   // AI quick prompts
   document.querySelectorAll<HTMLElement>('.ai-quick[data-prompt]').forEach(el => {
@@ -2051,11 +2765,15 @@ async function init(): Promise<void> {
   document.getElementById('aiInput')?.addEventListener('keydown', (e: KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
+      aiConversationMode = false;
       void sendAIMessage();
     }
   });
+  document.getElementById('aiInput')?.addEventListener('input', () => updateAIComposerUI());
 
   updateAIStatus('idle');
+  renderPendingAIAttachment();
+  updateAIComposerUI();
   syncAIPanelUIState();
   syncAIMobileModeUI();
   void ensureAutoLoadedLocalModel();
@@ -2212,7 +2930,7 @@ async function init(): Promise<void> {
     }
   }
 
-  // ─── Keyboard Shortcuts modal ───
+  // ─── Keyboard Shortcuts modal (legacy overlay – keep for Ctrl+/) ───
   const shortcutsGrid = document.getElementById('shortcutsGrid');
   if (shortcutsGrid) {
     shortcutsGrid.innerHTML = '<div class="shortcuts-grid">' +
@@ -2223,12 +2941,130 @@ async function init(): Promise<void> {
       '</div>';
   }
   document.getElementById('btnKeyboardShortcuts')?.addEventListener('click', () => {
-    const ov = document.getElementById('shortcutsOverlay')!;
-    ov.style.display = 'flex';
-    const releaseTrap = trapFocus(ov.querySelector('.modal')!);
-    const closeShortcutsModal = () => { ov.style.display = 'none'; releaseTrap(); };
-    document.getElementById('btnCloseShortcuts')!.onclick = closeShortcutsModal;
-    ov.onclick = (e: MouseEvent) => { if ((e.target as HTMLElement).id === 'shortcutsOverlay') closeShortcutsModal(); };
+    switchSettingsTab('shortcuts');
+  });
+  document.getElementById('btnCloseShortcuts')?.addEventListener('click', () => {
+    const ov = document.getElementById('shortcutsOverlay');
+    if (ov) ov.style.display = 'none';
+  });
+
+  // ─── Shortcuts Settings Tab: render, search, filter ───
+  function renderShortcutList(query: string = '', category: string = 'all'): void {
+    const container = document.getElementById('shortcutList');
+    if (!container) return;
+    const q = query.toLowerCase().trim();
+    const filtered = KEYBOARD_SHORTCUTS.filter(s => {
+      const matchCat = category === 'all' || s.category === category;
+      const matchQ = !q || s.label.toLowerCase().includes(q) || (s.description ?? '').toLowerCase().includes(q) || s.category.toLowerCase().includes(q);
+      return matchCat && matchQ;
+    });
+
+    if (filtered.length === 0) {
+      container.innerHTML = '<p style="font-size:12px;color:var(--text3);padding:16px 0;text-align:center;">No shortcuts match your search.</p>';
+      return;
+    }
+
+    // Group by category
+    const groups: Record<string, typeof KEYBOARD_SHORTCUTS> = {};
+    for (const s of filtered) {
+      (groups[s.category] ??= []).push(s);
+    }
+
+    container.innerHTML = Object.entries(groups).map(([cat, items]) => {
+      const rows = items.map(s => {
+        const keys: string[] = [];
+        if (s.mod) keys.push('Ctrl');
+        if (s.shift) keys.push('⇧');
+        if (s.alt) keys.push('Alt');
+        keys.push(s.key === 'Enter' ? '↵' : s.key === '\\' ? '\\' : s.key.toUpperCase());
+        const badges = keys.map(k => `<span class="kbd-key">${k}</span>`).join('');
+        return `<div class="kbd-row">
+          <div class="kbd-row-info">
+            <span class="kbd-row-label">${s.label}</span>
+            ${s.description ? `<span class="kbd-row-desc">${s.description}</span>` : ''}
+          </div>
+          <div class="kbd-row-keys">${badges}</div>
+        </div>`;
+      }).join('');
+      return `<div class="shortcut-group">
+        <div class="shortcut-group-header">${cat}</div>
+        ${rows}
+      </div>`;
+    }).join('');
+  }
+
+  // Initial render
+  renderShortcutList();
+
+  document.getElementById('shortcutSearchInput')?.addEventListener('input', (e) => {
+    const q = (e.target as HTMLInputElement).value;
+    const activeFilter = (document.querySelector<HTMLElement>('.shortcut-filter-btn.active')?.dataset.shortcutCategory) ?? 'all';
+    renderShortcutList(q, activeFilter);
+  });
+
+  document.getElementById('shortcutFilterBar')?.addEventListener('click', (e: Event) => {
+    const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-shortcut-category]');
+    if (!btn) return;
+    document.querySelectorAll('.shortcut-filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const q = (document.getElementById('shortcutSearchInput') as HTMLInputElement | null)?.value ?? '';
+    renderShortcutList(q, btn.dataset.shortcutCategory ?? 'all');
+  });
+
+  // ─── Accessibility Settings Tab ───
+  const fontScaleRange = document.getElementById('fontScaleRange') as HTMLInputElement | null;
+  const fontScaleLabel = document.getElementById('fontScaleLabel');
+  const savedFontScale = parseInt(localStorage.getItem('fontScale') ?? '100', 10);
+  if (fontScaleRange) {
+    fontScaleRange.value = String(savedFontScale);
+    document.documentElement.style.setProperty('--font-scale', `${savedFontScale / 100}`);
+    if (fontScaleLabel) fontScaleLabel.textContent = `${savedFontScale}%`;
+    fontScaleRange.addEventListener('input', () => {
+      const v = parseInt(fontScaleRange.value, 10);
+      document.documentElement.style.setProperty('--font-scale', `${v / 100}`);
+      if (fontScaleLabel) fontScaleLabel.textContent = `${v}%`;
+      localStorage.setItem('fontScale', String(v));
+    });
+  }
+
+  const highContrastToggle = document.getElementById('highContrastToggle') as HTMLInputElement | null;
+  if (highContrastToggle) {
+    highContrastToggle.checked = document.documentElement.classList.contains('high-contrast');
+    highContrastToggle.addEventListener('change', () => {
+      document.documentElement.classList.toggle('high-contrast', highContrastToggle.checked);
+      localStorage.setItem('highContrast', String(highContrastToggle.checked));
+    });
+    const savedHC = localStorage.getItem('highContrast') === 'true';
+    highContrastToggle.checked = savedHC;
+    document.documentElement.classList.toggle('high-contrast', savedHC);
+  }
+
+  const reduceMotionToggle = document.getElementById('reduceMotionToggle') as HTMLInputElement | null;
+  if (reduceMotionToggle) {
+    const savedRM = localStorage.getItem('reduceMotion') === 'true';
+    reduceMotionToggle.checked = savedRM;
+    document.documentElement.classList.toggle('reduce-motion', savedRM);
+    reduceMotionToggle.addEventListener('change', () => {
+      document.documentElement.classList.toggle('reduce-motion', reduceMotionToggle.checked);
+      localStorage.setItem('reduceMotion', String(reduceMotionToggle.checked));
+    });
+  }
+
+  const focusRingToggle = document.getElementById('focusRingToggle') as HTMLInputElement | null;
+  if (focusRingToggle) {
+    const savedFR = localStorage.getItem('focusRingAlways') === 'true';
+    focusRingToggle.checked = savedFR;
+    document.documentElement.classList.toggle('focus-ring-always', savedFR);
+    focusRingToggle.addEventListener('change', () => {
+      document.documentElement.classList.toggle('focus-ring-always', focusRingToggle.checked);
+      localStorage.setItem('focusRingAlways', String(focusRingToggle.checked));
+    });
+  }
+
+  document.getElementById('btnA11yAnnounceTest')?.addEventListener('click', () => {
+    announce('Screen reader test: Nexus Notes is working correctly.');
+    const status = document.getElementById('a11yTestStatus');
+    if (status) { status.textContent = 'Announced ✓'; setTimeout(() => { status.textContent = ''; }, 3000); }
   });
 
   // ─── Onboarding (first run) ───
@@ -2282,6 +3118,8 @@ async function handleFileUpload(file: File): Promise<void> {
       content: result.text,
       rawContent: result.text,
       markdownContent: result.text,
+      markdownPromptSystem: DEFAULT_MARKDOWN_PROMPT_SYSTEM,
+      markdownPromptTemplate: DEFAULT_MARKDOWN_PROMPT_TEMPLATE,
       markdownDirty: false,
       suggestedActions: [],
       lastRawSuggestionHash: null,
@@ -2315,10 +3153,55 @@ async function handleFileUpload(file: File): Promise<void> {
 function updateExplorerCollapseButtonLabel(): void {
   const btn = document.getElementById('btnCollapseExplorerSections');
   if (!btn) return;
-  const sections = Array.from(document.querySelectorAll<HTMLElement>('.tree-section[data-section-id]'))
-    .filter(s => s.style.display !== 'none');
+  const sections = getVisibleExplorerSections();
   const allCollapsed = sections.length > 0 && sections.every(section => section.classList.contains('collapsed'));
   btn.textContent = allCollapsed ? 'Expand all' : 'Collapse all';
+}
+
+function getVisibleExplorerSections(): HTMLElement[] {
+  return Array.from(document.querySelectorAll<HTMLElement>('.tree-section[data-section-id]'))
+    .filter((section) => section.style.display !== 'none' && !section.classList.contains('explorer-tab-hidden'));
+}
+
+function applyExplorerTabVisibility(): void {
+  const sectionTabMap: Record<string, ExplorerTabId> = {
+    library: 'library',
+    folders: 'folders',
+    toc: 'toc',
+    backlinks: 'toc',
+    tags: 'tags',
+  };
+
+  document.querySelectorAll<HTMLElement>('.tree-section[data-section-id]').forEach((section) => {
+    const sectionId = section.dataset.sectionId;
+    if (!sectionId) return;
+    const mappedTab = sectionTabMap[sectionId];
+    const hiddenByTab = mappedTab !== activeExplorerTab;
+    section.classList.toggle('explorer-tab-hidden', hiddenByTab);
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('[data-explorer-tab]').forEach((btn) => {
+    const isActive = btn.dataset.explorerTab === activeExplorerTab;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-selected', String(isActive));
+  });
+
+  updateExplorerCollapseButtonLabel();
+}
+
+function wireExplorerTabs(): void {
+  document.querySelectorAll<HTMLButtonElement>('[data-explorer-tab]').forEach((btn) => {
+    if (btn.dataset.wired === '1') return;
+    btn.dataset.wired = '1';
+    btn.addEventListener('click', () => {
+      const tabId = btn.dataset.explorerTab as ExplorerTabId | undefined;
+      if (!tabId || tabId === activeExplorerTab) return;
+      activeExplorerTab = tabId;
+      applyExplorerTabVisibility();
+    });
+  });
+
+  applyExplorerTabVisibility();
 }
 
 function wireCollapsibleExplorerSections(): void {
@@ -2363,9 +3246,57 @@ function noteTreeHeaderLabel(filter: string): string {
   return 'Notes Tree';
 }
 
+function getRenderedNoteOrder(): number[] {
+  const container = document.getElementById('filelistItems');
+  if (!container) return [];
+  return Array.from(container.querySelectorAll<HTMLElement>('.note-tree-note[data-note-id]'))
+    .map((el) => Number(el.dataset.noteId))
+    .filter((id) => Number.isFinite(id) && id > 0);
+}
+
+function updateBulkSelectionUI(): void {
+  const count = selectedNoteIds.size;
+  const countEl = document.getElementById('bulkSelectionCount');
+  const moveBtn = document.getElementById('btnBulkMove');
+  const delBtn = document.getElementById('btnBulkDelete');
+  if (countEl) {
+    countEl.textContent = `${count} selected`;
+    countEl.style.display = count > 0 ? '' : 'none';
+  }
+  if (moveBtn) moveBtn.style.display = count > 0 ? '' : 'none';
+  if (delBtn) delBtn.style.display = count > 0 ? '' : 'none';
+  document.querySelectorAll<HTMLElement>('.note-tree-note[data-note-id]').forEach((el) => {
+    const id = Number(el.dataset.noteId);
+    el.classList.toggle('selected', selectedNoteIds.has(id));
+  });
+}
+
+function clearNoteSelection(): void {
+  selectedNoteIds.clear();
+  lastSelectedNoteId = null;
+  updateBulkSelectionUI();
+}
+
+function parseDraggedNoteIds(event: DragEvent): number[] {
+  const rawList = event.dataTransfer?.getData(NOTE_DRAG_MIME) || '';
+  if (rawList) {
+    try {
+      const parsed = JSON.parse(rawList) as number[];
+      const ids = parsed.filter((id) => Number.isFinite(id) && id > 0);
+      if (ids.length > 0) return ids;
+    } catch {
+      // fall through to single-item payload
+    }
+  }
+  const single = Number(event.dataTransfer?.getData('text/plain') || '');
+  return single > 0 ? [single] : [];
+}
+
 function renderNoteTreeNote(note: Note, depth: number): string {
+  const selected = note.id != null && selectedNoteIds.has(note.id);
   return `
-    <div class="note-tree-note${currentNote?.id === note.id ? ' active' : ''}" data-note-id="${note.id}" draggable="true" style="--tree-depth:${depth};">
+    <div class="note-tree-note${currentNote?.id === note.id ? ' active' : ''}${selected ? ' selected' : ''}" data-note-id="${note.id}" draggable="true" style="--tree-depth:${depth};">
+      <span class="note-tree-select-indicator" aria-hidden="true">${selected ? '✓' : ''}</span>
       <div class="note-tree-note-title">${escapeHtml(note.title || 'Untitled')}</div>
       <div class="note-tree-note-meta">
         <span class="sync-badge ${note.syncStatus}"></span>
@@ -2381,6 +3312,7 @@ function renderNoteTreeNote(note: Note, depth: number): string {
 async function refreshFileList(filter?: string, search?: string): Promise<void> {
   if (filter !== undefined) currentListFilter = filter;
   if (search !== undefined) currentSearchQuery = search;
+  if (!currentNote) updateNoteDetailsProperties(null);
 
   const activeFilter = currentListFilter;
   const activeSearch = currentSearchQuery;
@@ -2438,6 +3370,14 @@ async function refreshFileList(filter?: string, search?: string): Promise<void> 
       }
       return true;
     });
+  }
+
+  const visibleNoteIds = new Set(notes.filter((n) => n.id != null).map((n) => n.id!));
+  for (const id of [...selectedNoteIds]) {
+    if (!visibleNoteIds.has(id)) selectedNoteIds.delete(id);
+  }
+  if (lastSelectedNoteId != null && !visibleNoteIds.has(lastSelectedNoteId)) {
+    lastSelectedNoteId = null;
   }
 
   // Update counts
@@ -2529,8 +3469,38 @@ async function refreshFileList(filter?: string, search?: string): Promise<void> 
   `;
 
   container.querySelectorAll<HTMLElement>('.note-tree-note').forEach(el => {
-    el.addEventListener('click', () => {
+    el.addEventListener('click', (event: MouseEvent) => {
       const noteId = Number(el.dataset.noteId);
+      if (!noteId) return;
+
+      const additive = event.ctrlKey || event.metaKey;
+      const range = event.shiftKey;
+      if (range && lastSelectedNoteId != null) {
+        const order = getRenderedNoteOrder();
+        const from = order.indexOf(lastSelectedNoteId);
+        const to = order.indexOf(noteId);
+        if (from >= 0 && to >= 0) {
+          const [start, end] = from <= to ? [from, to] : [to, from];
+          for (let i = start; i <= end; i += 1) selectedNoteIds.add(order[i]);
+        } else {
+          selectedNoteIds.add(noteId);
+        }
+        updateBulkSelectionUI();
+        return;
+      }
+
+      if (additive) {
+        if (selectedNoteIds.has(noteId)) selectedNoteIds.delete(noteId);
+        else selectedNoteIds.add(noteId);
+        lastSelectedNoteId = noteId;
+        updateBulkSelectionUI();
+        return;
+      }
+
+      selectedNoteIds.clear();
+      selectedNoteIds.add(noteId);
+      lastSelectedNoteId = noteId;
+      updateBulkSelectionUI();
       closeMobileDrawers();
       openNote(noteId);
     });
@@ -2539,7 +3509,13 @@ async function refreshFileList(filter?: string, search?: string): Promise<void> 
       showNoteContextMenu(e as MouseEvent, Number(el.dataset.noteId));
     });
     el.addEventListener('dragstart', (e: DragEvent) => {
-      e.dataTransfer!.setData('text/plain', el.dataset.noteId!);
+      const noteId = Number(el.dataset.noteId);
+      if (!noteId) return;
+      const dragIds = selectedNoteIds.has(noteId)
+        ? [...selectedNoteIds]
+        : [noteId];
+      e.dataTransfer!.setData('text/plain', String(noteId));
+      e.dataTransfer!.setData(NOTE_DRAG_MIME, JSON.stringify(dragIds));
       e.dataTransfer!.effectAllowed = 'move';
       el.classList.add('dragging');
     });
@@ -2572,12 +3548,14 @@ async function refreshFileList(filter?: string, search?: string): Promise<void> 
     el.addEventListener('drop', async (e: DragEvent) => {
       e.preventDefault();
       el.classList.remove('drag-over');
-      const noteId = Number(e.dataTransfer!.getData('text/plain'));
-      if (!noteId) return;
+      const noteIds = parseDraggedNoteIds(e);
+      if (noteIds.length === 0) return;
       const newFolderId = folderNodeId ? Number(folderNodeId) : null;
-      await moveNoteToFolder(noteId, newFolderId);
+      await moveNotesToFolder(noteIds, newFolderId);
     });
   });
+
+  updateBulkSelectionUI();
 
   updateNoteTreeCollapseButtonLabel();
 
@@ -2593,11 +3571,10 @@ async function refreshFileList(filter?: string, search?: string): Promise<void> 
   tagsList.innerHTML = [...allTags.entries()]
     .sort((a, b) => b[1] - a[1])
     .map(([tag, count]) => `
-      <div class="tree-item" data-tag="${escapeHtml(tag)}">
-        <span class="tree-item-icon">#</span>
-        <span class="tree-item-label">${escapeHtml(tag)}</span>
-        <span class="tree-item-count">${count}</span>
-      </div>
+      <button type="button" class="tag-chip" data-tag="${escapeHtml(tag)}" title="Filter by #${escapeHtml(tag)}">
+        <span class="tag-chip-label">#${escapeHtml(tag)}</span>
+        <span class="tag-chip-count">${count}</span>
+      </button>
     `).join('');
 
   tagsList.querySelectorAll<HTMLElement>('[data-tag]').forEach(el => {
@@ -2635,6 +3612,7 @@ async function openNote(noteId: number): Promise<void> {
   (document.getElementById('noteTitle') as HTMLInputElement).value = note.title;
   setNoteTags(note.tags);
   setRawEditorValue(getNoteRawContent(note));
+  setGenerationPromptEditorValues(note);
   scheduleActionPillsGeneration(getNoteRawContent(note));
 
   // Update sync badge
@@ -2652,8 +3630,11 @@ async function openNote(noteId: number): Promise<void> {
   folderSelect.onchange = () => {
     if (!currentNote?.id) return;
     const fid = folderSelect.value ? Number(folderSelect.value) : null;
+    currentNote.folderId = fid;
+    updateNoteDetailsProperties(currentNote);
     moveNoteToFolder(currentNote.id, fid);
   };
+  updateNoteDetailsProperties(note);
 
   // Create or update editor
   const editorPane = document.getElementById('editorPane')!;
@@ -2737,6 +3718,8 @@ async function createNewNote(): Promise<void> {
     content: '',
     rawContent: '',
     markdownContent: '',
+    markdownPromptSystem: DEFAULT_MARKDOWN_PROMPT_SYSTEM,
+    markdownPromptTemplate: DEFAULT_MARKDOWN_PROMPT_TEMPLATE,
     markdownDirty: false,
     suggestedActions: [],
     lastRawSuggestionHash: null,
@@ -2773,12 +3756,16 @@ async function saveCurrentNote(silent = false): Promise<void> {
   const tags = [...noteTags];
   const content = editor.state.doc.toString();
   const rawContent = getRawEditorValue();
+  const markdownPromptSystem = getGenerationPromptSystemInput()?.value ?? getResolvedGenerationPromptSystem(currentNote);
+  const markdownPromptTemplate = getGenerationPromptTemplateInput()?.value ?? getResolvedGenerationPromptTemplate(currentNote);
 
   await db.notes.update(currentNote.id, {
     title: title || 'Untitled',
     content,
     markdownContent: content,
     rawContent,
+    markdownPromptSystem,
+    markdownPromptTemplate,
     markdownDirty: currentNote.markdownDirty ?? false,
     tags,
     modified: Date.now(),
@@ -2791,6 +3778,7 @@ async function saveCurrentNote(silent = false): Promise<void> {
   currentNote = await db.notes.get(currentNote.id) || null;
   if (currentNote) {
     indexNote(currentNote);
+    updateNoteDetailsProperties(currentNote);
     await pushLocalNoteToFirestore(currentNote.id!);
     scheduleAutoSync();
   }
@@ -2820,6 +3808,7 @@ async function deleteCurrentNote(): Promise<void> {
 
   currentNote = null;
   editor = null;
+  updateNoteDetailsProperties(null);
 
   document.getElementById('editorContainer')!.style.display = 'none';
   document.getElementById('emptyState')!.style.display = '';
@@ -3000,20 +3989,12 @@ async function generateMarkdownFromRaw(raw: string): Promise<void> {
   const seq = ++markdownGenerationSeq;
 
   try {
-    const { engineModule } = await ensureLLMRuntime();
-    const llm = engineModule.llmEngine;
-    if (llm.getStatus() !== 'ready') return;
-
-    const generated = await llm.chatComplete([
-      {
-        role: 'system',
-        content: 'Convert user draft notes to clean markdown. Keep content faithful, add headings/lists only when appropriate. Return markdown only, no explanation.',
-      },
-      {
-        role: 'user',
-        content: trimmed.slice(0, 12000),
-      },
-    ], { maxTokens: 1800, temperature: 0.2 });
+    const { dispatchModule } = await ensureLLMRuntime();
+    const { text: generated } = await dispatchModule.dispatchChat(
+      buildMarkdownGenerationMessages(currentNote, trimmed),
+      () => {},
+      { maxTokens: 1800, temperature: 0.2 },
+    );
 
     if (seq !== markdownGenerationSeq || !currentNote || currentNote.markdownDirty || !editor) return;
 
@@ -3168,13 +4149,33 @@ function showFolderContextMenu(e: MouseEvent, folderId: number): void {
 /* ─── Folders ─── */
 async function refreshFolders(): Promise<void> {
   const folders = await db.folders.orderBy('order').toArray();
+  const byParent = new Map<number | null, Folder[]>();
+  for (const folder of folders) {
+    if (folder.id == null) continue;
+    const key = folder.parentId ?? null;
+    const bucket = byParent.get(key) || [];
+    bucket.push(folder);
+    byParent.set(key, bucket);
+  }
+
+  const renderTree = (parentId: number | null, depth: number): string => {
+    const nodes = byParent.get(parentId) || [];
+    return nodes.map((f) => {
+      const folderId = f.id as number;
+      return `
+      <div class="folder-tree-node">
+        <div class="tree-item folder-tree-item${currentFolderId === folderId ? ' active' : ''}" data-folder-id="${folderId}" style="--tree-depth:${depth};">
+          <span class="tree-item-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round"><path d="M2.2 4.6h4l1.3 1.6H14v5a1 1 0 0 1-1 1H3.2a1 1 0 0 1-1-1v-6.6Z"/></svg></span>
+          <span class="tree-item-label">${escapeHtml(f.name)}</span>
+        </div>
+        ${renderTree(folderId, depth + 1)}
+      </div>
+    `;
+    }).join('');
+  };
+
   const container = document.getElementById('foldersList')!;
-  container.innerHTML = folders.map((f: Folder) => `
-    <div class="tree-item${currentFolderId === f.id ? ' active' : ''}" data-folder-id="${f.id}">
-      <span class="tree-item-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round"><path d="M2.2 4.6h4l1.3 1.6H14v5a1 1 0 0 1-1 1H3.2a1 1 0 0 1-1-1v-6.6Z"/></svg></span>
-      <span class="tree-item-label">${escapeHtml(f.name)}</span>
-    </div>
-  `).join('');
+  container.innerHTML = renderTree(null, 0);
   container.querySelectorAll<HTMLElement>('[data-folder-id]').forEach(el => {
     el.addEventListener('click', () => {
       const fid = Number(el.dataset.folderId);
@@ -3202,9 +4203,9 @@ async function refreshFolders(): Promise<void> {
     el.addEventListener('drop', async (e: DragEvent) => {
       e.preventDefault();
       el.classList.remove('drag-over');
-      const noteId = Number(e.dataTransfer!.getData('text/plain'));
-      if (!noteId) return;
-      await moveNoteToFolder(noteId, Number(el.dataset.folderId));
+      const noteIds = parseDraggedNoteIds(e);
+      if (noteIds.length === 0) return;
+      await moveNotesToFolder(noteIds, Number(el.dataset.folderId));
     });
   });
   // Wire the "All Notes" tree item as a drop target to remove folder assignment
@@ -3227,9 +4228,9 @@ function wireAllNotesDrop(): void {
   allNotesEl.addEventListener('drop', async (e: DragEvent) => {
     e.preventDefault();
     allNotesEl.classList.remove('drag-over');
-    const noteId = Number(e.dataTransfer!.getData('text/plain'));
-    if (!noteId) return;
-    await moveNoteToFolder(noteId, null);
+    const noteIds = parseDraggedNoteIds(e);
+    if (noteIds.length === 0) return;
+    await moveNotesToFolder(noteIds, null);
   });
 }
 
@@ -3264,57 +4265,160 @@ async function deleteFolder(fid: number): Promise<void> {
 }
 
 async function moveNoteToFolder(noteId: number, folderId: number | null): Promise<void> {
-  await db.notes.update(noteId, {
-    folderId,
-    modified: Date.now(),
-    syncStatus: 'pending',
-  });
-  if (currentNote?.id === noteId) {
-    currentNote.folderId = folderId;
-    currentNote.syncStatus = 'pending';
-    updateSyncBadge('pending');
+  await moveNotesToFolder([noteId], folderId);
+}
+
+async function moveNotesToFolder(noteIds: number[], folderId: number | null): Promise<void> {
+  const uniqueIds = [...new Set(noteIds.filter((id) => Number.isFinite(id) && id > 0))];
+  if (uniqueIds.length === 0) return;
+
+  const modified = Date.now();
+  for (const noteId of uniqueIds) {
+    await db.notes.update(noteId, {
+      folderId,
+      modified,
+      syncStatus: 'pending',
+    });
+    if (currentNote?.id === noteId) {
+      currentNote.folderId = folderId;
+      currentNote.syncStatus = 'pending';
+      updateSyncBadge('pending');
+    }
   }
+
   await refreshFileList();
-  await pushLocalNoteToFirestore(noteId);
+  for (const noteId of uniqueIds) await pushLocalNoteToFirestore(noteId);
   scheduleAutoSync();
 }
 
 /* ─── Backlinks ─── */
+function scrollEditorToLine(line: number): void {
+  if (!editor) return;
+  const lineInfo = editor.state.doc.line(Math.min(line, editor.state.doc.lines));
+  editor.dispatch({
+    selection: { anchor: lineInfo.from },
+    scrollIntoView: true,
+  });
+  editor.focus();
+}
+
+function updateNoteDetailsProperties(note: Note | null): void {
+  const statusEl = document.getElementById('noteDetailsStatus');
+  const updatedEl = document.getElementById('noteDetailsUpdated');
+  const folderEl = document.getElementById('noteDetailsFolder');
+  const tagsEl = document.getElementById('noteDetailsTags');
+  if (!statusEl || !updatedEl || !folderEl || !tagsEl) return;
+
+  if (!note) {
+    statusEl.textContent = 'Idle';
+    statusEl.className = 'note-prop-badge';
+    updatedEl.textContent = '-';
+    folderEl.textContent = '-';
+    tagsEl.textContent = '-';
+    return;
+  }
+
+  const statusMap: Record<string, string> = {
+    synced: 'Synced',
+    pending: 'In Progress',
+    conflict: 'Conflict',
+    local: 'Local',
+  };
+  statusEl.textContent = statusMap[note.syncStatus] || 'Unknown';
+  statusEl.className = `note-prop-badge ${note.syncStatus}`;
+  updatedEl.textContent = new Date(note.modified).toLocaleDateString();
+
+  const folderName = note.folderId != null
+    ? document.querySelector<HTMLElement>(`#folderSelect option[value="${note.folderId}"]`)?.textContent
+    : null;
+  folderEl.textContent = folderName || 'Unfiled';
+
+  tagsEl.textContent = note.tags.length > 0
+    ? note.tags.map((tag) => `#${tag}`).join(', ')
+    : '-';
+}
+
+function updateNoteDetailsTagPreview(): void {
+  const tagsEl = document.getElementById('noteDetailsTags');
+  if (!tagsEl) return;
+  tagsEl.textContent = noteTags.length > 0
+    ? noteTags.map((tag) => `#${tag}`).join(', ')
+    : '-';
+}
+
 async function updateBacklinks(): Promise<void> {
-  const section = document.getElementById('backlinksSection')!;
-  const list = document.getElementById('backlinksList')!;
+  const section = document.getElementById('backlinksSection');
+  const list = document.getElementById('backlinksList');
+  const detailsSection = document.getElementById('noteDetailsBacklinksSection');
+  const detailsList = document.getElementById('noteDetailsBacklinksList');
   if (!currentNote) {
-    section.style.display = 'none';
+    if (section) section.style.display = 'none';
+    if (detailsSection) detailsSection.style.display = 'none';
     updateExplorerCollapseButtonLabel();
     return;
   }
   const title = currentNote.title;
-  if (!title) { section.style.display = 'none'; updateExplorerCollapseButtonLabel(); return; }
+  if (!title) {
+    if (section) section.style.display = 'none';
+    if (detailsSection) detailsSection.style.display = 'none';
+    updateExplorerCollapseButtonLabel();
+    return;
+  }
   const pattern = `[[${title}]]`;
   const allNotes = await db.notes.toArray();
   const links = allNotes.filter(n => n.id !== currentNote!.id && n.content.includes(pattern));
   if (links.length === 0) {
-    section.style.display = 'none';
+    if (section) section.style.display = 'none';
+    if (detailsSection) detailsSection.style.display = 'none';
     updateExplorerCollapseButtonLabel();
     return;
   }
-  section.style.display = '';
+  if (section) section.style.display = '';
+  if (detailsSection) detailsSection.style.display = '';
   updateExplorerCollapseButtonLabel();
-  list.innerHTML = links.map(n => `
+
+  const markup = links.map(n => `
     <div class="tree-item" data-backlink-id="${n.id}">
       <span class="tree-item-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 5.1 3.2 8.4l3.3 3.3"/><path d="M3.4 8.4h6.2a3 3 0 1 0 0-6H7.8"/></svg></span>
       <span class="tree-item-label">${escapeHtml(n.title || 'Untitled')}</span>
     </div>
   `).join('');
-  list.querySelectorAll<HTMLElement>('[data-backlink-id]').forEach(el => {
-    el.addEventListener('click', () => openNote(Number(el.dataset.backlinkId)));
-  });
+
+  const detailsMarkup = links.map((n) => {
+    const plain = n.content
+      .replace(/```[\s\S]*?```/g, ' ')
+      .replace(/[#>*_`~\-\[\]()]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const snippet = plain.length > 96 ? `${plain.slice(0, 96)}...` : (plain || 'Linked mention');
+    return `
+      <button type="button" class="note-details-card" data-details-backlink-id="${n.id}">
+        <span class="note-details-card-title">${escapeHtml(n.title || 'Untitled')}</span>
+        <span class="note-details-card-snippet">${escapeHtml(snippet)}</span>
+      </button>
+    `;
+  }).join('');
+
+  if (list) {
+    list.innerHTML = markup;
+    list.querySelectorAll<HTMLElement>('[data-backlink-id]').forEach(el => {
+      el.addEventListener('click', () => openNote(Number(el.dataset.backlinkId)));
+    });
+  }
+
+  if (detailsList) {
+    detailsList.innerHTML = detailsMarkup;
+    detailsList.querySelectorAll<HTMLElement>('[data-details-backlink-id]').forEach(el => {
+      el.addEventListener('click', () => openNote(Number(el.dataset.detailsBacklinkId)));
+    });
+  }
 }
 
 /* ─── Table of Contents ─── */
 function updateTOC(content: string): void {
-  const tocSection = document.getElementById('tocSection')!;
-  const tocList = document.getElementById('tocList')!;
+  const tocSection = document.getElementById('tocSection');
+  const tocList = document.getElementById('tocList');
+  const detailsTocList = document.getElementById('noteDetailsTocList');
   const headings: { level: number; text: string; line: number }[] = [];
   const lines = content.split('\n');
   for (let i = 0; i < lines.length; i++) {
@@ -3324,29 +4428,54 @@ function updateTOC(content: string): void {
     }
   }
   if (headings.length === 0) {
-    tocSection.style.display = 'none';
+    if (tocSection) tocSection.style.display = 'none';
+    if (detailsTocList) {
+      detailsTocList.innerHTML = '<p class="note-details-empty">No headings found in this note.</p>';
+    }
     updateExplorerCollapseButtonLabel();
     return;
   }
-  tocSection.style.display = '';
+  if (tocSection) tocSection.style.display = '';
   updateExplorerCollapseButtonLabel();
-  tocList.innerHTML = headings.map(h => `
-    <div class="tree-item toc-item" data-toc-line="${h.line}" style="padding-left:${8 + (h.level - 1) * 12}px;">
-      <span class="tree-item-label" style="font-size:${h.level <= 2 ? '12px' : '11px'};${h.level === 1 ? 'font-weight:600;' : ''}">${escapeHtml(h.text)}</span>
+
+  const tocMarkup = headings.map(h => `
+    <div class="tree-item toc-item" data-toc-line="${h.line}" data-toc-level="${h.level}" style="--toc-indent:${8 + (h.level - 1) * 12}px;">
+      <span class="tree-item-label">${escapeHtml(h.text)}</span>
     </div>
   `).join('');
-  tocList.querySelectorAll<HTMLElement>('[data-toc-line]').forEach(el => {
-    el.addEventListener('click', () => {
-      if (!editor) return;
-      const line = Number(el.dataset.tocLine);
-      const lineInfo = editor.state.doc.line(Math.min(line, editor.state.doc.lines));
-      editor.dispatch({
-        selection: { anchor: lineInfo.from },
-        scrollIntoView: true,
+
+  const tocLevels = [0, 0, 0, 0, 0, 0];
+  const detailsTocMarkup = headings.map((h) => {
+    tocLevels[h.level - 1] += 1;
+    for (let idx = h.level; idx < tocLevels.length; idx += 1) tocLevels[idx] = 0;
+    const prefix = tocLevels.slice(0, h.level).filter((value) => value > 0).join('.');
+    return `
+      <button type="button" class="note-details-toc-item" data-toc-line="${h.line}" data-toc-level="${h.level}">
+        <span class="note-details-toc-number">${prefix}</span>
+        <span class="note-details-toc-label">${escapeHtml(h.text)}</span>
+      </button>
+    `;
+  }).join('');
+
+  if (tocList) {
+    tocList.innerHTML = tocMarkup;
+    tocList.querySelectorAll<HTMLElement>('[data-toc-line]').forEach(el => {
+      el.addEventListener('click', () => {
+        const line = Number(el.dataset.tocLine);
+        scrollEditorToLine(line);
       });
-      editor.focus();
     });
-  });
+  }
+
+  if (detailsTocList) {
+    detailsTocList.innerHTML = detailsTocMarkup;
+    detailsTocList.querySelectorAll<HTMLElement>('[data-toc-line]').forEach(el => {
+      el.addEventListener('click', () => {
+        const line = Number(el.dataset.tocLine);
+        scrollEditorToLine(line);
+      });
+    });
+  }
 }
 
 /* ─── Word Count ─── */
@@ -3483,16 +4612,25 @@ async function refreshPasskeyEnrollmentStatus(message?: string): Promise<void> {
 function updateSyncProviderStatus(): void {
   const el = document.getElementById('syncProviderStatus');
   const disconnectBtn = document.getElementById('btnDisconnectSync')!;
+  const quickSelect = document.getElementById('syncProviderQuickSelect') as HTMLSelectElement | null;
   const provider = syncEngine.getProvider();
   if (!el) return;
   if (provider && provider.isAuthenticated()) {
     el.textContent = `Connected to ${provider.name}`;
     el.style.color = 'var(--green, #4caf50)';
     disconnectBtn.style.display = '';
+    if (quickSelect) {
+      quickSelect.value = provider.id === 'google-drive'
+        ? 'gdrive'
+        : provider.id === 'onedrive'
+          ? 'onedrive'
+          : 'dropbox';
+    }
   } else {
     el.textContent = 'Not connected';
     el.style.color = 'var(--text3)';
     disconnectBtn.style.display = 'none';
+    if (quickSelect) quickSelect.value = selectedSyncProviderType;
   }
 }
 
@@ -3626,9 +4764,188 @@ function showProviderStatus(msg: string): void {
   }
 }
 
+type CommandPaletteItem = {
+  id: string;
+  label: string;
+  keywords: string;
+  disabled?: boolean;
+  run: () => Promise<void> | void;
+};
+
+let commandPaletteFocusRelease: (() => void) | null = null;
+
+function closeCommandPalette(): void {
+  const overlay = document.getElementById('commandPaletteOverlay');
+  if (!overlay) return;
+  overlay.style.display = 'none';
+  if (commandPaletteFocusRelease) {
+    commandPaletteFocusRelease();
+    commandPaletteFocusRelease = null;
+  }
+}
+
+async function promptFolderSelection(promptTitle: string): Promise<number | null | undefined> {
+  const folders = await db.folders.orderBy('order').toArray();
+  const options = ['(Unfiled)', ...folders.map((f) => f.name)];
+  const choice = prompt(`${promptTitle}\n${options.map((name, i) => `${i}. ${name}`).join('\n')}\n\nEnter number:`);
+  if (choice == null) return undefined;
+  const idx = Number.parseInt(choice, 10);
+  if (Number.isNaN(idx) || idx < 0 || idx > folders.length) return undefined;
+  return idx === 0 ? null : (folders[idx - 1]?.id ?? null);
+}
+
+function getCommandPaletteItems(): CommandPaletteItem[] {
+  return [
+    {
+      id: 'new-note',
+      label: 'Create New Note',
+      keywords: 'create add note',
+      run: async () => { await createNewNote(); },
+    },
+    {
+      id: 'open-settings',
+      label: 'Open Settings',
+      keywords: 'preferences configuration settings',
+      run: () => openSettings(),
+    },
+    {
+      id: 'focus-search',
+      label: 'Focus Search',
+      keywords: 'search find notes',
+      run: () => document.getElementById('searchInput')?.focus(),
+    },
+    {
+      id: 'toggle-ai',
+      label: 'Toggle AI Panel',
+      keywords: 'assistant ai panel',
+      run: () => toggleAIPanel(),
+    },
+    {
+      id: 'sync-now',
+      label: 'Sync Now',
+      keywords: 'sync cloud backup now',
+      run: async () => {
+        const provider = syncEngine.getProvider();
+        if (!provider || !provider.isAuthenticated()) await connectProvider(selectedSyncProviderType);
+        else await doSync();
+      },
+    },
+    {
+      id: 'move-current-note',
+      label: 'Move Current Note to Folder',
+      keywords: 'move folder organize current note',
+      disabled: !currentNote?.id,
+      run: async () => {
+        if (!currentNote?.id) return;
+        const folderId = await promptFolderSelection('Move current note to:');
+        if (folderId === undefined) return;
+        await moveNoteToFolder(currentNote.id, folderId);
+      },
+    },
+    {
+      id: 'add-tag',
+      label: 'Add Tag to Current Note',
+      keywords: 'tag label annotate current note',
+      disabled: !currentNote?.id,
+      run: async () => {
+        if (!currentNote?.id) return;
+        const value = prompt('Tag to add:');
+        if (!value?.trim()) return;
+        addTag(value);
+        await saveCurrentNote(true);
+      },
+    },
+    {
+      id: 'remove-tag',
+      label: 'Remove Tag from Current Note',
+      keywords: 'tag remove label current note',
+      disabled: !currentNote?.id || noteTags.length === 0,
+      run: async () => {
+        if (!currentNote?.id || noteTags.length === 0) return;
+        const value = prompt(`Remove which tag?\n${noteTags.join(', ')}`);
+        if (!value?.trim()) return;
+        removeTag(value);
+        await saveCurrentNote(true);
+      },
+    },
+    {
+      id: 'bulk-move',
+      label: 'Move Selected Notes',
+      keywords: 'bulk multi select move folder',
+      disabled: selectedNoteIds.size === 0,
+      run: async () => {
+        if (selectedNoteIds.size === 0) return;
+        const ids = [...selectedNoteIds];
+        const folderId = await promptFolderSelection('Move selected notes to:');
+        if (folderId === undefined) return;
+        await moveNotesToFolder(ids, folderId);
+        clearNoteSelection();
+      },
+    },
+    {
+      id: 'bulk-delete',
+      label: 'Delete Selected Notes',
+      keywords: 'bulk multi delete notes',
+      disabled: selectedNoteIds.size === 0,
+      run: async () => {
+        if (selectedNoteIds.size === 0) return;
+        const ids = [...selectedNoteIds];
+        if (!confirm(`Delete ${ids.length} selected note${ids.length === 1 ? '' : 's'}?`)) return;
+        for (const id of ids) {
+          removeFromIndex(id);
+          await db.notes.delete(id);
+          await deleteRemoteNoteFromFirestore(id);
+        }
+        clearNoteSelection();
+        await refreshFileList();
+      },
+    },
+  ];
+}
+
+function renderCommandPaletteList(query: string): void {
+  const list = document.getElementById('commandPaletteList');
+  if (!list) return;
+  const q = query.trim().toLowerCase();
+  const items = getCommandPaletteItems().filter((item) => {
+    if (!q) return true;
+    return item.label.toLowerCase().includes(q) || item.keywords.includes(q);
+  });
+  list.innerHTML = items.length === 0
+    ? '<div class="command-palette-empty">No commands found</div>'
+    : items.map((item) => `
+        <button type="button" class="command-palette-item${item.disabled ? ' disabled' : ''}" data-command-id="${item.id}" ${item.disabled ? 'disabled' : ''}>
+          <span>${escapeHtml(item.label)}</span>
+        </button>
+      `).join('');
+
+  list.querySelectorAll<HTMLElement>('[data-command-id]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const commandId = btn.dataset.commandId;
+      const item = getCommandPaletteItems().find((candidate) => candidate.id === commandId);
+      if (!item || item.disabled) return;
+      closeCommandPalette();
+      await item.run();
+    });
+  });
+}
+
+function openCommandPalette(): void {
+  const overlay = document.getElementById('commandPaletteOverlay');
+  const input = document.getElementById('commandPaletteInput') as HTMLInputElement | null;
+  const dialog = overlay?.querySelector<HTMLElement>('.command-palette-dialog') || null;
+  if (!overlay || !input || !dialog) return;
+  overlay.style.display = 'flex';
+  renderCommandPaletteList('');
+  input.value = '';
+  input.focus();
+  if (commandPaletteFocusRelease) commandPaletteFocusRelease();
+  commandPaletteFocusRelease = trapFocus(dialog);
+}
+
 function setSyncProviderSelection(type: SyncProviderType): void {
   selectedSyncProviderType = type;
-  const clientInput = document.getElementById('syncClientIdInput') as HTMLInputElement | null;
+  const quickSelect = document.getElementById('syncProviderQuickSelect') as HTMLSelectElement | null;
   const typeOrder: SyncProviderType[] = ['gdrive', 'onedrive', 'dropbox'];
 
   typeOrder.forEach((candidate) => {
@@ -3645,40 +4962,50 @@ function setSyncProviderSelection(type: SyncProviderType): void {
 
   const setup = SYNC_PROVIDER_SETUP[type];
   const guide = document.getElementById('syncProviderGuide');
-  const redirectUri = `${window.location.origin}/auth/callback`;
+  const managedClientId = getManagedSyncClientId(type);
+  const isConfigured = managedClientId.length > 0;
+
+  if (quickSelect) quickSelect.value = type;
+
   if (guide) {
-    guide.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-        <strong style="font-size:12px;">${setup.label} setup</strong>
-        <a href="${setup.docsUrl}" target="_blank" rel="noreferrer" style="font-size:11px;color:var(--accent);">Open ${setup.consoleName} ↗</a>
-      </div>
-      <ol style="margin:8px 0 0 18px;padding:0;display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--text2);">
-        <li>Create OAuth app in: <span style="color:var(--text3);">${setup.createPath}</span></li>
-        <li>Add redirect URI: <code style="font-size:10px;">${redirectUri}</code></li>
-        <li>Grant scope(s): <code style="font-size:10px;">${setup.scopes}</code></li>
-        <li>Copy the Client ID and paste it below, then click Connect.</li>
-      </ol>
-    `;
+    if (isConfigured) {
+      guide.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+          <strong style="font-size:12px;">${setup.label}</strong>
+          <span style="font-size:11px;color:var(--green, #4caf50);">✓ No setup required</span>
+        </div>
+        <p style="margin:8px 0 0;font-size:11px;color:var(--text2);line-height:1.5;">
+          ${setup.description}
+        </p>
+      `;
+    } else {
+      guide.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+          <strong style="font-size:12px;">${setup.label}</strong>
+          <span style="font-size:11px;color:var(--text3);">Not configured</span>
+        </div>
+        <p style="margin:8px 0 0;font-size:11px;color:var(--text2);line-height:1.5;">
+          ${setup.label} sync has not been enabled for this app yet. Please contact support.
+        </p>
+      `;
+    }
   }
 
-  if (clientInput) {
-    const stored = localStorage.getItem(`sync-client-id-${type}`);
-    if (stored) clientInput.value = stored;
-    clientInput.placeholder = `Paste ${setup.label} OAuth Client ID`;
+  const connectButton = document.getElementById('btnConnectSelectedProvider') as HTMLButtonElement | null;
+  if (connectButton) {
+    connectButton.textContent = `Connect ${setup.label}`;
+    connectButton.disabled = !isConfigured;
   }
-
-  const connectButton = document.getElementById('btnConnectSelectedProvider');
-  if (connectButton) connectButton.textContent = `Connect ${setup.label}`;
 }
 
 /* ─── Cloud Sync ─── */
 async function connectProvider(type: 'gdrive' | 'onedrive' | 'dropbox', providedClientId?: string): Promise<void> {
-  const clientInput = document.getElementById('syncClientIdInput') as HTMLInputElement | null;
-  const rawClientId = providedClientId ?? clientInput?.value ?? '';
+  const managedClientId = getManagedSyncClientId(type);
+  const rawClientId = providedClientId ?? managedClientId;
   const clientId = rawClientId.trim();
   if (!clientId) {
     const setup = SYNC_PROVIDER_SETUP[type];
-    setStatus(`Paste your ${setup.label} OAuth Client ID first.`);
+    setStatus(`${setup.label} sync is not configured for this app. Please contact support.`);
     return;
   }
 
@@ -3694,7 +5021,6 @@ async function connectProvider(type: 'gdrive' | 'onedrive' | 'dropbox', provided
     await syncEngine.setProvider(provider);
     await setSetting('syncProvider', type);
     await setSetting('syncClientId', clientId.trim());
-    localStorage.setItem(`sync-client-id-${type}`, clientId.trim());
     syncEngine.start();
     updateSyncProviderStatus();
     setStatus(`Connected to ${provider.name}`);
@@ -3717,8 +5043,12 @@ async function disconnectSync(): Promise<void> {
 
 async function restoreSyncProvider(): Promise<void> {
   const type = await getSetting('syncProvider');
-  const clientId = await getSetting('syncClientId');
-  if (!type || !clientId) return;
+  const storedClientId = await getSetting('syncClientId');
+  const restoredType = (type || '') as SyncProviderType;
+  const managedClientId = restoredType ? getManagedSyncClientId(restoredType) : '';
+  const clientId = (managedClientId || storedClientId || '').trim();
+  if (!type) return;
+  if (!clientId) return;
 
   let provider;
   switch (type) {
@@ -3932,6 +5262,13 @@ async function toggleAIPanel(): Promise<void> {
 function closeAIPanel(): void {
   document.getElementById('aiPanel')!.classList.remove('open');
   aiMobileExpanded = false;
+  aiConversationMode = false;
+  if (aiVoiceInputListening) {
+    stopSpeech();
+    aiVoiceInputListening = false;
+  }
+  stopTts();
+  updateAIComposerUI();
   syncAIPanelUIState();
 }
 
@@ -4021,43 +5358,200 @@ async function renderModelCatalog(): Promise<void> {
 
 function updateAIStatus(status: LLMStatus, detail?: string): void {
   const nameEl = document.getElementById('aiModelName')!;
-  const sendBtn = document.getElementById('btnAISend')!;
-  const stopBtn = document.getElementById('btnAIStop')!;
 
   nameEl.style.color = 'var(--text3)';
 
   switch (status) {
     case 'idle':
       nameEl.textContent = 'No model loaded';
-      sendBtn.style.display = '';
-      stopBtn.style.display = 'none';
       setAIProgressState();
+      aiIsGenerating = false;
       break;
     case 'loading':
       nameEl.textContent = `Loading ${detail || 'model'}…`;
-      sendBtn.style.display = 'none';
-      stopBtn.style.display = 'none';
+      aiIsGenerating = false;
       break;
     case 'ready':
       nameEl.textContent = detail || 'Model ready';
       nameEl.style.color = 'var(--text2)';
-      sendBtn.style.display = '';
-      stopBtn.style.display = 'none';
       setAIProgressState();
+      aiIsGenerating = false;
       break;
     case 'generating':
       nameEl.style.color = 'var(--text2)';
-      sendBtn.style.display = 'none';
-      stopBtn.style.display = '';
+      aiIsGenerating = true;
       break;
     case 'error':
       nameEl.textContent = `Error: ${detail || 'Unknown'}`;
       nameEl.style.color = 'var(--red)';
-      sendBtn.style.display = '';
-      stopBtn.style.display = 'none';
       setAIProgressState();
+      aiIsGenerating = false;
       break;
   }
+
+  updateAIComposerUI();
+}
+
+function renderPendingAIAttachment(): void {
+  const tray = document.getElementById('aiAttachmentTray') as HTMLElement | null;
+  if (!tray) return;
+  if (!pendingAIAttachment) {
+    tray.style.display = 'none';
+    tray.innerHTML = '';
+    return;
+  }
+
+  tray.style.display = 'flex';
+  tray.innerHTML = `
+    <div class="ai-attachment-chip">
+      <span class="ai-attachment-chip-name">${escapeHtml(pendingAIAttachment.filename)}</span>
+      <span class="ai-attachment-chip-meta">${escapeHtml(pendingAIAttachment.mimeType)}</span>
+      <button class="btn btn-ghost btn-icon btn-sm ai-attachment-remove" data-remove-ai-attachment title="Remove attachment" aria-label="Remove attachment">${closeIconSvg(10)}</button>
+    </div>
+  `;
+}
+
+function updateAIComposerUI(): void {
+  const btn = document.getElementById('btnAIConverse') as HTMLButtonElement | null;
+  const input = document.getElementById('aiInput') as HTMLTextAreaElement | null;
+  if (!btn || !input) return;
+
+  btn.classList.toggle('ai-voice-listening', aiVoiceInputListening);
+  btn.classList.toggle('ai-converse-stop', aiIsGenerating || (aiConversationMode && getTtsState() === 'speaking'));
+
+  if (aiIsGenerating) {
+    btn.title = 'Stop response';
+    btn.setAttribute('aria-label', 'Stop response');
+    btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><rect x="4" y="4" width="8" height="8" rx="1"/></svg>';
+    return;
+  }
+
+  if (aiVoiceInputListening) {
+    btn.title = 'Stop listening';
+    btn.setAttribute('aria-label', 'Stop listening');
+    btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><rect x="4" y="4" width="8" height="8" rx="1"/></svg>';
+    return;
+  }
+
+  if (input.value.trim()) {
+    btn.title = 'Send message';
+    btn.setAttribute('aria-label', 'Send message');
+    btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M3 2.5 13.5 8 3 13.5 4.8 8z"/></svg>';
+    return;
+  }
+
+  btn.title = aiConversationMode ? 'Stop live conversation' : 'Start live conversation';
+  btn.setAttribute('aria-label', btn.title);
+  btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.2" width="4" height="7.1" rx="2"/><path d="M4 7.9a4 4 0 0 0 8 0M8 11.9V14M6.4 14h3.2"/></svg>';
+}
+
+async function attachFileToAIChat(file: File): Promise<void> {
+  if (!isSupportedFile(file)) {
+    setStatus('Unsupported file for AI chat. Use PDF, DOCX, or image.');
+    return;
+  }
+
+  try {
+    setStatus(`Extracting ${file.name}…`);
+    const result = await extractFromFile(file, (pct: number, label: string) => {
+      setStatus(`${label} ${pct}%`);
+    });
+
+    const extractedText = result.text.trim().slice(0, AI_ATTACHMENT_TEXT_LIMIT);
+    const preview = extractedText.slice(0, AI_ATTACHMENT_PREVIEW_LIMIT);
+    pendingAIAttachment = {
+      filename: result.filename,
+      mimeType: result.mimeType,
+      extractedText,
+      preview,
+    };
+    renderPendingAIAttachment();
+    updateAIComposerUI();
+    setStatus(`Attached ${result.filename} for AI analysis`);
+  } catch (err) {
+    setStatus(`Attachment extraction failed: ${err instanceof Error ? err.message : 'error'}`);
+  }
+}
+
+function startAIListeningTurn(): void {
+  if (!isWebSpeechSupported()) {
+    setStatus('Speech recognition not supported in this browser');
+    return;
+  }
+
+  if (getSpeechListening()) {
+    stopSpeech();
+    document.getElementById('btnMic')?.classList.remove('mic-recording');
+  }
+
+  const aiInputEl = document.getElementById('aiInput') as HTMLTextAreaElement | null;
+  if (!aiInputEl) return;
+
+  startWebSpeech(
+    (text: string, isFinal: boolean) => {
+      aiInputEl.value = isFinal ? text.trim() : text;
+      updateAIComposerUI();
+      if (isFinal && aiInputEl.value) {
+        stopSpeech();
+        aiVoiceInputListening = false;
+        updateAIComposerUI();
+        void sendAIMessage();
+      }
+    },
+    (status: 'idle' | 'listening' | 'processing' | 'error') => {
+      if (status === 'idle' || status === 'error') {
+        aiVoiceInputListening = false;
+        updateAIComposerUI();
+      }
+    },
+    { lang: speechLang, continuous: false },
+  );
+
+  aiVoiceInputListening = true;
+  updateAIComposerUI();
+}
+
+function stopAIListeningTurn(): void {
+  stopSpeech();
+  aiVoiceInputListening = false;
+  updateAIComposerUI();
+}
+
+async function handleAIConverseAction(): Promise<void> {
+  const input = document.getElementById('aiInput') as HTMLTextAreaElement | null;
+  if (!input) return;
+
+  if (aiIsGenerating) {
+    aiConversationMode = false;
+    await abortAIGeneration();
+    updateAIComposerUI();
+    return;
+  }
+
+  if (aiVoiceInputListening) {
+    aiConversationMode = false;
+    stopAIListeningTurn();
+    announce('Live conversation stopped');
+    return;
+  }
+
+  if (aiConversationMode && getTtsState() === 'speaking') {
+    aiConversationMode = false;
+    stopTts();
+    updateAIComposerUI();
+    announce('Live conversation stopped');
+    return;
+  }
+
+  if (input.value.trim() || pendingAIAttachment) {
+    aiConversationMode = false;
+    await sendAIMessage();
+    return;
+  }
+
+  aiConversationMode = true;
+  startAIListeningTurn();
+  announce('Live conversation started. Speak now');
 }
 
 function addAIMessage(role: 'user' | 'assistant', content: string): HTMLElement {
@@ -4099,8 +5593,13 @@ function addAIMessage(role: 'user' | 'assistant', content: string): HTMLElement 
 
 async function sendAIMessage(): Promise<void> {
   const input = document.getElementById('aiInput') as HTMLTextAreaElement;
-  const text = input.value.trim();
-  if (!text) return;
+  let text = input.value.trim();
+  const attachment = pendingAIAttachment;
+  if (!text && !attachment) return;
+
+  if (!text && attachment) {
+    text = 'Please analyze the attached file and summarize the key points.';
+  }
 
   const { engineModule, dispatchModule } = await ensureLLMRuntime();
   const {
@@ -4111,10 +5610,8 @@ async function sendAIMessage(): Promise<void> {
   } = dispatchModule;
   const { llmEngine } = engineModule;
 
-  // Check if any provider is available
   const activeId = await getActiveProvider();
   if (activeId === 'local' && llmEngine.getStatus() === 'idle') {
-    // Check if any external provider has a key configured
     const externals = getAllProviders();
     let anyExternal = false;
     for (const p of externals) {
@@ -4128,30 +5625,35 @@ async function sendAIMessage(): Promise<void> {
   if (activeId === 'local' && llmEngine.getStatus() === 'loading') return;
   if (activeId === 'local' && llmEngine.getStatus() === 'generating') return;
 
-  input.value = '';
-  addAIMessage('user', text);
+  const userDisplayText = attachment
+    ? `${text}\n\n[Attached for analysis: ${attachment.filename}]`
+    : text;
+  const modelUserText = attachment
+    ? `${text}\n\n[ATTACHMENT CONTEXT]\nFilename: ${attachment.filename}\nMimeType: ${attachment.mimeType}\nExtractedText:\n${attachment.extractedText}`
+    : text;
 
-  // Build system message with note context
+  input.value = '';
+  pendingAIAttachment = null;
+  renderPendingAIAttachment();
+  updateAIComposerUI();
+  addAIMessage('user', userDisplayText);
+
   const systemMsg: ChatMessage = {
     role: 'system',
     content: `You are a helpful AI writing assistant integrated into a note-taking app. ${currentNote ? `The user is editing a note titled "${currentNote.title}". Note content:\n\n${currentNote.content.slice(0, 4000)}` : 'No note is currently open.'}`,
   };
 
-  aiChatHistory.push({ role: 'user', content: text });
-
   const messages: ChatMessage[] = [
     systemMsg,
-    ...aiChatHistory.slice(-10), // Keep last 10 messages for context window
+    ...aiChatHistory.slice(-10),
+    { role: 'user', content: modelUserText },
   ];
 
   const msgEl = addAIMessage('assistant', '');
   let fullResponse = '';
 
-  // Show generating state
-  const sendBtn = document.getElementById('btnAISend')!;
-  const stopBtn = document.getElementById('btnAIStop')!;
-  sendBtn.style.display = 'none';
-  stopBtn.style.display = '';
+  aiIsGenerating = true;
+  updateAIComposerUI();
 
   try {
     const result = await dispatchChat(messages, (_token, full) => {
@@ -4163,12 +5665,21 @@ async function sendAIMessage(): Promise<void> {
   } catch {
     if (!fullResponse) msgEl.innerHTML = '<em style="color:var(--red);">Generation failed.</em>';
   } finally {
-    sendBtn.style.display = '';
-    stopBtn.style.display = 'none';
+    aiIsGenerating = false;
+    updateAIComposerUI();
   }
 
   if (fullResponse) {
+    aiChatHistory.push({ role: 'user', content: text });
     aiChatHistory.push({ role: 'assistant', content: fullResponse });
+
+    if (aiVoiceOutputEnabled && isTtsSupported()) {
+      await speakText(fullResponse, { lang: speechLang });
+    }
+
+    if (aiConversationMode && document.getElementById('aiPanel')?.classList.contains('open')) {
+      startAIListeningTurn();
+    }
   }
 }
 
@@ -4407,6 +5918,8 @@ async function createNoteFromTemplate(t: { name: string; content: string }): Pro
     content,
     rawContent: content,
     markdownContent: content,
+    markdownPromptSystem: DEFAULT_MARKDOWN_PROMPT_SYSTEM,
+    markdownPromptTemplate: DEFAULT_MARKDOWN_PROMPT_TEMPLATE,
     markdownDirty: false,
     suggestedActions: [],
     lastRawSuggestionHash: null,

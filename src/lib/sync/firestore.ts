@@ -26,6 +26,7 @@ export interface FirestoreNote {
   id: number;
   title: string;
   content: string;
+  rawContent: string;
   tags: string[];
   folderId: number | null;
   created: number;
@@ -34,6 +35,8 @@ export interface FirestoreNote {
   pinned: boolean;
   revision: string | null;
   providerFileId: string | null;
+  markdownPromptSystem?: string;
+  markdownPromptTemplate?: string;
 }
 
 export type FirestoreNoteChangeHandler = (
@@ -54,6 +57,7 @@ function toFirestoreNote(note: Note): FirestoreNote {
     id: note.id!,
     title: note.title,
     content: note.content,
+    rawContent: note.rawContent ?? note.content,
     tags: note.tags,
     folderId: note.folderId,
     created: note.created,
@@ -62,6 +66,8 @@ function toFirestoreNote(note: Note): FirestoreNote {
     pinned: note.pinned,
     revision: note.revision,
     providerFileId: note.providerFileId,
+    ...(typeof note.markdownPromptSystem === 'string' ? { markdownPromptSystem: note.markdownPromptSystem } : {}),
+    ...(typeof note.markdownPromptTemplate === 'string' ? { markdownPromptTemplate: note.markdownPromptTemplate } : {}),
   };
 }
 
@@ -70,6 +76,7 @@ function fromFirestoreDoc(data: DocumentData): FirestoreNote {
     id: data.id,
     title: data.title ?? '',
     content: data.content ?? '',
+    rawContent: data.rawContent ?? data.content ?? '',
     tags: data.tags ?? [],
     folderId: data.folderId ?? null,
     created: data.created ?? Date.now(),
@@ -78,6 +85,8 @@ function fromFirestoreDoc(data: DocumentData): FirestoreNote {
     pinned: data.pinned ?? false,
     revision: data.revision ?? null,
     providerFileId: data.providerFileId ?? null,
+    markdownPromptSystem: typeof data.markdownPromptSystem === 'string' ? data.markdownPromptSystem : undefined,
+    markdownPromptTemplate: typeof data.markdownPromptTemplate === 'string' ? data.markdownPromptTemplate : undefined,
   };
 }
 

@@ -10,6 +10,12 @@ interface BackupMetadata {
   exportedAt: string;
   noteCount: number;
   folderCount: number;
+  scope: string;
+}
+
+
+export interface ExportOptions {
+  scope?: 'all' | 'pinned';
 }
 
 interface NoteMetadata {
@@ -24,9 +30,9 @@ interface NoteMetadata {
 
 /* ─── Export ─── */
 
-export async function exportToZip(): Promise<Blob> {
+export async function exportToZip(options: ExportOptions = {}): Promise<Blob> {
   const zip = new JSZip();
-  const notes = await db.notes.toArray();
+  let notes = await db.notes.toArray();
   const folders = await db.folders.toArray();
 
   // Build folder paths map
@@ -53,6 +59,8 @@ export async function exportToZip(): Promise<Blob> {
   // Add notes as .md files with front matter
   const notesMeta: NoteMetadata[] = [];
   const usedPaths = new Set<string>();
+
+  if (options.scope === 'pinned') notes = notes.filter(n => n.pinned);
 
   for (const note of notes) {
     const folderPath = getFolderPath(note.folderId);
@@ -89,6 +97,7 @@ export async function exportToZip(): Promise<Blob> {
     exportedAt: new Date().toISOString(),
     noteCount: notes.length,
     folderCount: folders.length,
+    scope: options.scope ?? 'all',
   };
   zip.file('metadata.json', JSON.stringify(meta, null, 2));
 
@@ -194,8 +203,10 @@ export async function importFromZip(file: File): Promise<ImportResult> {
       await db.notes.add({
         title: parsed.title,
         content: parsed.content,
-        rawContent: parsed.content,
+        rawContent: parsed.rawContent ?? parsed.content,
         markdownContent: parsed.content,
+        markdownPromptSystem: parsed.markdownPromptSystem,
+        markdownPromptTemplate: parsed.markdownPromptTemplate,
         markdownDirty: false,
         suggestedActions: [],
         lastRawSuggestionHash: null,
@@ -236,6 +247,9 @@ function serializeFrontMatter(note: Note): string {
   lines.push(`modified: ${new Date(note.modified).toISOString()}`);
   if (note.pinned) lines.push(`pinned: true`);
   if (note.folderId) lines.push(`folderId: ${note.folderId}`);
+  lines.push(`rawContent: ${JSON.stringify(note.rawContent ?? note.content)}`);
+  if (typeof note.markdownPromptSystem === 'string') lines.push(`markdownPromptSystem: ${JSON.stringify(note.markdownPromptSystem)}`);
+  if (typeof note.markdownPromptTemplate === 'string') lines.push(`markdownPromptTemplate: ${JSON.stringify(note.markdownPromptTemplate)}`);
   lines.push('---');
   lines.push('');
   lines.push(note.content);
@@ -243,7 +257,7 @@ function serializeFrontMatter(note: Note): string {
 }
 
 function parseFrontMatter(raw: string): {
-  title: string; content: string; tags: string[]; folderId: number | null;
+  title: string; content: string; rawContent: string; markdownPromptSystem?: string; markdownPromptTemplate?: string; tags: string[]; folderId: number | null;
   created: number; modified: number; pinned: boolean;
 } {
   const fmRegex = /^---\n([\s\S]*?)\n---\n?([\s\S]*)$/;
@@ -253,6 +267,9 @@ function parseFrontMatter(raw: string): {
     return {
       title: 'Imported Note',
       content: raw,
+      rawContent: raw,
+      markdownPromptSystem: undefined,
+      markdownPromptTemplate: undefined,
       tags: [],
       folderId: null,
       created: Date.now(),
@@ -279,11 +296,25 @@ function parseFrontMatter(raw: string): {
   const modified = modifiedMatch ? new Date(modifiedMatch[1]).getTime() || Date.now() : Date.now();
 
   const pinned = /pinned:\s*true/i.test(fm);
+  const rawContent = parseJsonFrontMatterString(fm, 'rawContent') || content;
+  const markdownPromptSystem = parseJsonFrontMatterString(fm, 'markdownPromptSystem') ?? undefined;
+  const markdownPromptTemplate = parseJsonFrontMatterString(fm, 'markdownPromptTemplate') ?? undefined;
 
   const folderIdMatch = fm.match(/^folderId:\s*(\d+)/m);
   const folderId = folderIdMatch ? parseInt(folderIdMatch[1], 10) : null;
 
-  return { title, content, tags, folderId, created, modified, pinned };
+  return { title, content, rawContent, markdownPromptSystem, markdownPromptTemplate, tags, folderId, created, modified, pinned };
+}
+
+function parseJsonFrontMatterString(frontMatter: string, key: string): string | null {
+  const regex = new RegExp(`^${key}:\\s*(.+)$`, 'm');
+  const match = frontMatter.match(regex);
+  if (!match) return null;
+  try {
+    return JSON.parse(match[1]) as string;
+  } catch {
+    return null;
+  }
 }
 
 function topologicalSort(

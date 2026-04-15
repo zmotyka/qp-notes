@@ -192,3 +192,45 @@ export const SPEECH_LANGUAGES = [
   { code: 'uk-UA', label: 'Ukrainian' },
   { code: 'vi-VN', label: 'Vietnamese' },
 ] as const;
+
+/* ─── Text-to-Speech (SpeechSynthesis API) ─── */
+
+export interface TtsOptions {
+  lang?: string;
+  rate?: number;
+  pitch?: number;
+  volume?: number;
+}
+
+export function isTtsSupported(): boolean {
+  return 'speechSynthesis' in window;
+}
+
+export function speakText(text: string, options: TtsOptions = {}): Promise<void> {
+  if (!isTtsSupported() || !text.trim()) return Promise.resolve();
+
+  window.speechSynthesis.cancel();
+
+  return new Promise((resolve) => {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = options.lang || 'en-US';
+    utterance.rate = options.rate ?? 1;
+    utterance.pitch = options.pitch ?? 1;
+    utterance.volume = options.volume ?? 1;
+    utterance.onend = () => resolve();
+    utterance.onerror = () => resolve();
+    window.speechSynthesis.speak(utterance);
+  });
+}
+
+export function stopTts(): void {
+  if (!isTtsSupported()) return;
+  window.speechSynthesis.cancel();
+}
+
+export function getTtsState(): 'speaking' | 'paused' | 'idle' {
+  if (!isTtsSupported()) return 'idle';
+  if (window.speechSynthesis.speaking) return 'speaking';
+  if (window.speechSynthesis.paused) return 'paused';
+  return 'idle';
+}
