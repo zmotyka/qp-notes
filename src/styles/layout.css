@@ -1731,6 +1731,7 @@
   color: var(--text3);
 }
 
+.empty-state h2,
 .empty-state h3 {
   font-size: 24px;
   font-weight: 700;
@@ -1741,6 +1742,18 @@
   font-size: 14px;
   color: var(--text2);
   max-width: 300px;
+}
+
+.empty-state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.empty-state-more {
+  display: flex;
+  gap: 8px;
 }
 
 /* ─── Statusbar ─── */
@@ -3419,6 +3432,19 @@
   background: var(--bg2);
 }
 
+.ai-mode-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 0 12px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ai-mode-tabs .btn.active {
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+
 .ai-model-status {
   padding: 8px 14px;
   border-bottom: 1px solid var(--border);
@@ -3434,6 +3460,19 @@
   flex-direction: column;
   gap: 10px;
   background: transparent;
+}
+
+#app.focus-mode .sidebar-tree,
+#app.focus-mode .note-details-panel,
+#app.focus-mode .ai-panel,
+#app.focus-mode .ai-panel-backdrop,
+#app.focus-mode .statusbar-secondary {
+  display: none !important;
+}
+
+#app.focus-mode .editor-panel {
+  max-width: 980px;
+  margin: 0 auto;
 }
 
 .ai-msg {
@@ -4209,20 +4248,20 @@
 /* Light-theme overrides */
 [data-theme="light"] .shortcut-search-input {
   background: var(--bg2);
-  border-color: #e2e8f0;
-  color: #0f172a;
+  border-color: var(--border);
+  color: var(--text);
 }
 [data-theme="light"] .shortcut-search-input:focus {
   border-color: var(--accent2);
 }
 [data-theme="light"] .shortcut-filter-btn {
-  background: #f8fafc;
-  border-color: #e2e8f0;
-  color: #475569;
+  background: var(--bg3);
+  border-color: var(--border);
+  color: var(--text2);
 }
 [data-theme="light"] .shortcut-filter-btn:hover {
-  background: #f1f5f9;
-  color: #0f172a;
+  background: color-mix(in srgb, var(--bg3) 72%, var(--accent-bg));
+  color: var(--text);
 }
 [data-theme="light"] .shortcut-filter-btn.active {
   background: var(--accent2);
@@ -4230,29 +4269,29 @@
   color: var(--text-inverse);
 }
 [data-theme="light"] .shortcut-group {
-  border-color: #e2e8f0;
+  border-color: var(--border);
 }
 [data-theme="light"] .shortcut-group-header {
-  background: #f8fafc;
-  border-color: #e2e8f0;
-  color: #64748b;
+  background: var(--bg3);
+  border-color: var(--border);
+  color: var(--text2);
 }
 [data-theme="light"] .kbd-row {
-  border-color: #f1f5f9;
+  border-color: color-mix(in srgb, var(--border) 78%, transparent);
 }
 [data-theme="light"] .kbd-row:hover {
-  background: #f8fafc;
+  background: color-mix(in srgb, var(--bg3) 80%, var(--accent-bg));
 }
 [data-theme="light"] .kbd-row-label {
-  color: #0f172a;
+  color: var(--text);
 }
 [data-theme="light"] .kbd-row-desc {
-  color: #64748b;
+  color: var(--text2);
 }
 [data-theme="light"] .kbd-key {
   background: var(--bg2);
-  border-color: #e2e8f0;
-  color: #475569;
+  border-color: var(--border);
+  color: var(--text2);
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
 }
 

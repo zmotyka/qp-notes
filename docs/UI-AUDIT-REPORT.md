@@ -5,7 +5,7 @@
 ## Executive Summary
 - Total issues tracked: 12
 - Resolved: 10
-- Open: 2 (performance-focused)
+- Open: 1 (performance-focused)
 - Coverage expanded to authenticated shell, editor, split/preview, settings, command palette, templates, history, AI panel, model catalog, notes tree, and status bar visual states across all device profiles.
 
 ## Issues by Category
@@ -18,9 +18,9 @@
   - **Fix:** Added guarded `e2e-bypass-auth` flow and deterministic shell/editor helpers.
 
 - [ ] **HIGH-003**: Performance below production target
-  - **Current:** Lighthouse main-state performance now `56/55/66` (laptop/tablet/iphone).
-  - **Actions already taken:** reduced test-blocking boot friction, improved semantic structure, and moved audit workflow to stable CLI runner.
-  - **Next fix track:** deeper runtime chunking + deferred heavy module initialization remains required.
+  - **Current:** Lighthouse main-state performance remains below target, but startup debt was reduced by deferring markdown preview runtime.
+  - **Actions already taken:** reduced test-blocking boot friction, improved semantic structure, moved audit workflow to stable CLI runner, and lazy-loaded markdown rendering runtime + preview-only CSS.
+  - **Next fix track:** additional chunk boundary tuning and deferred search/index initialization remain required.
 
 - [x] **HIGH-004**: SEO score below target
   - **Fix:** Added metadata/OG/Twitter tags in `index.html` and improved landmark discoverability.
@@ -78,6 +78,21 @@
 - Runs executed across laptop/tablet/iphone projects.
 
 ## CSS Architecture Recommendations
-1. Continue reducing hardcoded color fallbacks in low-traffic style branches.
-2. Add one follow-up performance pass focused on runtime import deferral and chunk boundaries.
+1. [x] Reduced remaining hardcoded light-theme fallback colors in shortcut/accessibility style branches.
+2. Add one follow-up performance pass focused on chunk boundaries and deferred search/index initialization.
 3. Keep z-index token scale as the single source of layering truth.
+
+## Implementation Plan (UX/UI Phase 2)
+
+### Sprint 1 (High impact, low risk)
+- [x] Add Focus Mode toggle to declutter shell while writing.
+- [x] Expand command palette with template, AI-mode, focus-mode, and sync-provider actions.
+- [x] Introduce AI panel modes (`Assist` and `Transform`) to reduce mixed-context cognitive load.
+- [x] Upgrade empty state to quick-start actions (`Capture Draft`, `Use Template`, `Import`) plus a `More` tray.
+- [x] Improve mobile ergonomics by closing bottom drawer when opening AI panel.
+
+### Sprint 2 (Deeper polish)
+- [ ] Persist explorer section collapse state across sessions/devices.
+- [ ] Add deterministic app-level AI model catalog mock mode for E2E/visual stability.
+- [ ] Continue semantic token migration for remaining ad-hoc color-mix branches.
+- [ ] Add CI quality gates by risk class (functional/a11y hard gate, visual/lighthouse trend gate).

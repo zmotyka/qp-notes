@@ -4,8 +4,6 @@
 import './styles/themes.css';
 import './styles/layout.css';
 import './styles/auth.css';
-import 'highlight.js/styles/github-dark.css';
-import 'katex/dist/katex.min.css';
 
 import { initFirebase } from './lib/firebase';
 import {
@@ -20,7 +18,6 @@ import {
 import { initDb, getDb, db, getSetting, setSetting, type Note, type Folder } from './lib/db';
 import { loadThemeFromSettings, saveTheme, saveAccent, getTheme, getAccent, THEMES, ACCENTS, type ThemeName, type AccentColor } from './lib/theme';
 import { createEditor, wrapSelection, insertLinePrefix, insertAtCursor, replaceContent, getSelectedText, type EditorOptions } from './lib/editor';
-import { renderMarkdown } from './lib/preview';
 import { initTips, TIPS, type Tip } from './lib/tips';
 import { buildSearchIndex, indexNote, removeFromIndex, searchNotes } from './lib/search';
 import { syncEngine, type SyncResult } from './lib/sync/sync-engine';
@@ -65,7 +62,7 @@ let markdownAutoGenTimer: ReturnType<typeof setTimeout> | null = null;
 let actionPillsTimer: ReturnType<typeof setTimeout> | null = null;
 let markdownGenerationSeq = 0;
 let applyingProgrammaticMarkdownUpdate = false;
-let currentListFilter: string = 'all';
+let currentListFilter: string = 'recent';
 let currentSearchQuery = '';
 const collapsedExplorerSections = new Set<string>();
 const collapsedNoteTreeFolders = new Set<string>();
@@ -78,6 +75,9 @@ let sidebarTreeCollapsed = false;
 let sidebarFilelistCollapsed = false;
 let workspacePanelHidden = false;
 let noteDetailsPanelHidden = false;
+let focusModeEnabled = false;
+type AIPanelMode = 'assist' | 'transform';
+let aiPanelMode: AIPanelMode = 'assist';
 let selectedSyncProviderType: 'gdrive' | 'onedrive' | 'dropbox' = 'gdrive';
 type SettingsTabId = 'general' | 'sync' | 'ai' | 'security' | 'shortcuts' | 'accessibility';
 let activeSettingsTab: SettingsTabId = 'general';
@@ -112,6 +112,7 @@ const DEFAULT_MARKDOWN_PROMPT_TEMPLATE = 'Title: {{title}}\n\nCurrent markdown (
 
 type SyncProviderType = 'gdrive' | 'onedrive' | 'dropbox';
 const NOTE_DRAG_MIME = 'application/x-zed-note-ids';
+const EXPLORER_COLLAPSED_KEY = 'explorerCollapsedSections';
 
 const SYNC_PROVIDER_SETUP: Record<SyncProviderType, {
   label: string;
@@ -632,6 +633,59 @@ function syncPanelToggleButtons(): void {
     aiBtn.setAttribute('aria-pressed', String(aiOpen));
     aiBtn.title = aiOpen ? 'Hide AI Assistant' : 'Show AI Assistant';
   }
+  const focusBtn = document.getElementById('btnFocusMode') as HTMLButtonElement | null;
+  if (focusBtn) {
+    focusBtn.setAttribute('aria-pressed', String(focusModeEnabled));
+    focusBtn.textContent = focusModeEnabled ? 'Exit Focus Mode' : 'Enter Focus Mode';
+  }
+}
+
+function setFocusModeEnabled(enabled: boolean): void {
+  focusModeEnabled = enabled;
+  const app = document.getElementById('app');
+  app?.classList.toggle('focus-mode', enabled);
+  localStorage.setItem('focusModeEnabled', String(enabled));
+  syncPanelToggleButtons();
+}
+
+function persistCollapsedExplorerSections(): void {
+  localStorage.setItem(EXPLORER_COLLAPSED_KEY, JSON.stringify([...collapsedExplorerSections]));
+}
+
+function loadCollapsedExplorerSections(): void {
+  const raw = localStorage.getItem(EXPLORER_COLLAPSED_KEY);
+  if (!raw) return;
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return;
+    collapsedExplorerSections.clear();
+    parsed.forEach((id) => {
+      if (typeof id === 'string' && id.trim()) collapsedExplorerSections.add(id);
+    });
+  } catch {
+    // Ignore invalid persisted state.
+  }
+}
+
+function setAIPanelMode(mode: AIPanelMode): void {
+  aiPanelMode = mode;
+  const panel = document.getElementById('aiPanel');
+  panel?.setAttribute('data-ai-mode', mode);
+  const input = document.getElementById('aiInput') as HTMLTextAreaElement | null;
+  const quickBar = document.getElementById('aiQuickBar');
+  const composeFooter = document.getElementById('aiComposeFooter');
+  document.querySelectorAll<HTMLButtonElement>('[data-ai-mode-btn]').forEach((btn) => {
+    const active = btn.dataset.aiModeBtn === mode;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-selected', String(active));
+  });
+  if (quickBar) quickBar.style.display = mode === 'transform' ? 'flex' : 'none';
+  if (composeFooter) composeFooter.style.display = mode === 'assist' ? 'flex' : 'none';
+  if (input) {
+    input.placeholder = mode === 'assist'
+      ? 'Ask about your note, attach context, or start conversation…'
+      : 'Transform this note (summarize, rewrite, expand, grammar, explain)…';
+  }
 }
 
 function syncAIMobileModeUI(): void {
@@ -984,6 +1038,7 @@ const LOCAL_MODEL_SETTING_KEY = 'llm-local-model-id';
 type UploadModule = typeof import('./lib/upload');
 type SpeechModule = typeof import('./lib/speech');
 type BackupModule = typeof import('./lib/backup');
+type PreviewModule = typeof import('./lib/preview');
 type GoogleDriveProviderModule = typeof import('./lib/sync/google-drive');
 type OneDriveProviderModule = typeof import('./lib/sync/onedrive');
 type DropboxProviderModule = typeof import('./lib/sync/dropbox');
@@ -992,6 +1047,7 @@ type AuthPasskeyModule = typeof import('./lib/auth-passkey');
 let uploadModulePromise: Promise<UploadModule> | null = null;
 let speechModulePromise: Promise<SpeechModule> | null = null;
 let backupModulePromise: Promise<BackupModule> | null = null;
+let previewModulePromise: Promise<PreviewModule> | null = null;
 let googleDriveProviderModulePromise: Promise<GoogleDriveProviderModule> | null = null;
 let oneDriveProviderModulePromise: Promise<OneDriveProviderModule> | null = null;
 let dropboxProviderModulePromise: Promise<DropboxProviderModule> | null = null;
@@ -1011,6 +1067,16 @@ function getSpeechModule(): Promise<SpeechModule> {
 function getBackupModule(): Promise<BackupModule> {
   if (!backupModulePromise) backupModulePromise = import('./lib/backup');
   return backupModulePromise;
+}
+
+function getPreviewModule(): Promise<PreviewModule> {
+  if (!previewModulePromise) previewModulePromise = import('./lib/preview');
+  return previewModulePromise;
+}
+
+async function renderMarkdownContent(content: string, container: HTMLElement): Promise<void> {
+  const previewModule = await getPreviewModule();
+  await previewModule.renderMarkdown(content, container);
 }
 
 function getGoogleDriveProviderModule(): Promise<GoogleDriveProviderModule> {
@@ -1349,7 +1415,7 @@ async function initFirestoreRealtimeSync(uid: string): Promise<void> {
             replaceContent(editor, remoteMarkdown);
             applyingProgrammaticMarkdownUpdate = false;
             const previewPane = document.getElementById('previewPane');
-            if (previewPane) await renderMarkdown(remoteMarkdown, previewPane);
+            if (previewPane) await renderMarkdownContent(remoteMarkdown, previewPane);
           }
           updateSyncBadge(currentNote.syncStatus);
         }
@@ -1406,6 +1472,7 @@ function renderApp(): void {
           </button>
           <div class="ui-compact-menu-panel" id="topbarMoreMenu" hidden>
             <button class="ui-compact-menu-item" id="btnNewFromTemplate" type="button">New from Template</button>
+            <button class="ui-compact-menu-item" id="btnFocusMode" type="button" aria-pressed="false">Enter Focus Mode</button>
             <button class="ui-compact-menu-item" id="btnTopbarWorkspace" type="button" aria-pressed="true">Toggle Workspace Panel</button>
             <button class="ui-compact-menu-item" id="btnTopbarDetails" type="button" aria-pressed="true">Toggle Note Details</button>
             <button class="ui-compact-menu-item" id="btnOpenTips" type="button">Help & Tips</button>
@@ -1515,7 +1582,16 @@ function renderApp(): void {
           <div class="empty-state-icon"><svg width="30" height="30" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2.5h5l3 3V13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z"/><path d="M9 2.5V6h3"/><path d="M5.4 9.2h5.2M5.4 11.2h3.6"/></svg></div>
           <h2>Welcome to Zed Note</h2>
           <p>Create a new note or select one from the sidebar to get started.</p>
-          <button class="btn btn-primary" id="btnEmptyNew"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2.5v11M2.5 8h11"/></svg>Create your first note</button>
+          <div class="empty-state-actions">
+            <button class="btn btn-primary" id="btnEmptyNew"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2.5v11M2.5 8h11"/></svg>Capture Draft</button>
+            <button class="btn btn-ghost" id="btnEmptyTemplate">Use Template</button>
+            <button class="btn btn-ghost" id="btnEmptyImport">Import</button>
+            <button class="btn btn-ghost" id="btnEmptyMore" aria-expanded="false">More</button>
+          </div>
+          <div class="empty-state-more" id="emptyStateMore" hidden>
+            <button class="btn btn-ghost btn-sm" id="btnEmptyOpenAI">Open AI Assistant</button>
+            <button class="btn btn-ghost btn-sm" id="btnEmptyOpenSettings">Open Settings</button>
+          </div>
         </div>
 
         <div id="editorContainer" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
@@ -1707,6 +1783,10 @@ function renderApp(): void {
             <button class="btn btn-ghost btn-icon btn-sm" id="btnAIPanelClose" title="Close" style="font-size:14px;">${closeIconSvg(12)}</button>
           </div>
         </div>
+        <div class="ai-mode-tabs" role="tablist" aria-label="AI mode">
+          <button class="btn btn-ghost btn-sm active" role="tab" aria-selected="true" data-ai-mode-btn="assist" type="button">Assist</button>
+          <button class="btn btn-ghost btn-sm" role="tab" aria-selected="false" data-ai-mode-btn="transform" type="button">Transform</button>
+        </div>
 
         <!-- Model Status -->
         <div class="ai-model-status" id="aiModelStatus">
@@ -1722,7 +1802,7 @@ function renderApp(): void {
 
         <!-- Input Area -->
         <div class="ai-input-area">
-          <div style="display:flex;gap:4px;margin-bottom:6px;flex-wrap:wrap;align-items:center;">
+          <div id="aiQuickBar" style="display:flex;gap:4px;margin-bottom:6px;flex-wrap:wrap;align-items:center;">
             <button class="btn btn-ghost btn-sm ai-quick" data-prompt="Summarize" title="Summarize">Summary</button>
             <button class="btn btn-ghost btn-sm ai-quick" data-prompt="Expand" title="Expand">Expand</button>
             <button class="btn btn-ghost btn-sm ai-quick" data-prompt="Fix Grammar" title="Fix Grammar">Grammar</button>
@@ -1738,7 +1818,7 @@ function renderApp(): void {
               <button class="btn btn-primary btn-sm ai-converse-btn" id="btnAIConverse" title="Converse" aria-label="Converse with AI"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.2" width="4" height="7.1" rx="2"/><path d="M4 7.9a4 4 0 0 0 8 0M8 11.9V14M6.4 14h3.2"/></svg></button>
             </div>
           </div>
-          <div class="ai-compose-footer">
+          <div class="ai-compose-footer" id="aiComposeFooter">
             <button class="btn btn-ghost btn-sm ai-attach-btn" id="btnAIAttach" title="Attach file for analysis" aria-label="Attach file for analysis"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5.4 8.6 3.8-3.8a2.2 2.2 0 1 1 3.1 3.1L7.8 12.5a3.1 3.1 0 0 1-4.4-4.4l5-5"/></svg></button>
             <div id="aiAttachmentTray" class="ai-attachment-tray" style="display:none;"></div>
           </div>
@@ -2237,11 +2317,13 @@ async function init(): Promise<void> {
   // Render shell
   renderApp();
   mergeWorkspacePanels();
+  loadCollapsedExplorerSections();
   setWorkspacePanelHidden(false);
   setNoteDetailsPanelHidden(true);
   document.getElementById('btnWorkspaceEdgeToggle')?.addEventListener('click', () => setWorkspacePanelHidden(!workspacePanelHidden));
   document.getElementById('btnTopbarWorkspace')?.addEventListener('click', () => setWorkspacePanelHidden(!workspacePanelHidden));
   document.getElementById('btnTopbarDetails')?.addEventListener('click', () => setNoteDetailsPanelHidden(!noteDetailsPanelHidden));
+  document.getElementById('btnFocusMode')?.addEventListener('click', () => setFocusModeEnabled(!focusModeEnabled));
   document.getElementById('btnToggleNoteDetailsPanel')?.addEventListener('click', () => setNoteDetailsPanelHidden(!noteDetailsPanelHidden));
   document.getElementById('btnTopbarMore')?.addEventListener('click', (event) => {
     event.stopPropagation();
@@ -2296,12 +2378,35 @@ async function init(): Promise<void> {
   });
 
   document.getElementById('btnOpenTips')?.addEventListener('click', showAllTipsModal);
+  document.getElementById('btnEmptyTemplate')?.addEventListener('click', openNoteTemplates);
+  document.getElementById('btnEmptyImport')?.addEventListener('click', () => openSettings('sync'));
+  document.getElementById('btnEmptyOpenSettings')?.addEventListener('click', () => openSettings());
+  document.getElementById('btnEmptyOpenAI')?.addEventListener('click', () => { void toggleAIPanel(); });
+  document.getElementById('btnEmptyMore')?.addEventListener('click', () => {
+    const more = document.getElementById('emptyStateMore');
+    const btn = document.getElementById('btnEmptyMore') as HTMLButtonElement | null;
+    if (!more || !btn) return;
+    const next = more.hidden;
+    more.hidden = !next;
+    btn.setAttribute('aria-expanded', String(next));
+  });
+  document.querySelectorAll<HTMLButtonElement>('[data-ai-mode-btn]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const mode = btn.dataset.aiModeBtn as AIPanelMode | undefined;
+      if (!mode) return;
+      setAIPanelMode(mode);
+    });
+  });
 
   // Load notes & render file list
   await refreshFileList();
 
   // Build full-text search index
   await buildSearchIndex();
+
+  const savedFocusMode = localStorage.getItem('focusModeEnabled') === 'true';
+  setFocusModeEnabled(savedFocusMode);
+  setAIPanelMode('assist');
 
   // Load folders
   await refreshFolders();
@@ -2323,6 +2428,7 @@ async function init(): Promise<void> {
         collapsedExplorerSections.add(sectionId);
       }
     });
+    persistCollapsedExplorerSections();
     updateExplorerCollapseButtonLabel();
   });
 
@@ -3455,6 +3561,7 @@ function wireCollapsibleExplorerSections(): void {
       const collapsed = section.classList.toggle('collapsed');
       if (collapsed) collapsedExplorerSections.add(sectionId);
       else collapsedExplorerSections.delete(sectionId);
+      persistCollapsedExplorerSections();
       updateExplorerCollapseButtonLabel();
     });
   });
@@ -3888,7 +3995,7 @@ async function openNote(noteId: number): Promise<void> {
         if (previewDebounceTimer) clearTimeout(previewDebounceTimer);
         previewDebounceTimer = setTimeout(() => {
           const previewPane = document.getElementById('previewPane')!;
-          renderMarkdown(content, previewPane);
+          void renderMarkdownContent(content, previewPane);
         }, 300);
 
         // Auto-save debounce (2s)
@@ -3913,7 +4020,7 @@ async function openNote(noteId: number): Promise<void> {
 
   // Initial preview render
   const previewPane = document.getElementById('previewPane')!;
-  await renderMarkdown(markdown, previewPane);
+  await renderMarkdownContent(markdown, previewPane);
 
   // Initial word count
   updateWordCount(markdown);
@@ -4256,7 +4363,7 @@ async function generateMarkdownFromRaw(raw: string): Promise<void> {
     applyingProgrammaticMarkdownUpdate = false;
 
     const previewPane = document.getElementById('previewPane');
-    if (previewPane) await renderMarkdown(generated, previewPane);
+    if (previewPane) await renderMarkdownContent(generated, previewPane);
     updateWordCount(generated);
     updateTOC(generated);
     scheduleTagSave();
@@ -4823,9 +4930,9 @@ function escapeHtml(str: string): string {
 }
 
 /* ─── Settings Modal ─── */
-function openSettings(): void {
+function openSettings(tab?: SettingsTabId): void {
   document.getElementById('settingsOverlay')!.style.display = 'flex';
-  switchSettingsTab(activeSettingsTab);
+  switchSettingsTab(tab ?? activeSettingsTab);
   updateSyncProviderStatus();
   void refreshPasskeyEnrollmentStatus();
   const currentType = (syncEngine.getProvider()?.id === 'google-drive'
@@ -5097,6 +5204,12 @@ function getCommandPaletteItems(): CommandPaletteItem[] {
       run: () => openSettings(),
     },
     {
+      id: 'open-templates',
+      label: 'Open Note Templates',
+      keywords: 'templates snippets quickstart',
+      run: () => openNoteTemplates(),
+    },
+    {
       id: 'focus-search',
       label: 'Focus Search',
       keywords: 'search find notes',
@@ -5109,6 +5222,30 @@ function getCommandPaletteItems(): CommandPaletteItem[] {
       run: () => toggleAIPanel(),
     },
     {
+      id: 'open-ai-model-catalog',
+      label: 'Open AI Model Catalog',
+      keywords: 'ai model catalog local model webllm',
+      run: () => openModelCatalog(),
+    },
+    {
+      id: 'ai-mode-assist',
+      label: 'Switch AI Mode: Assist',
+      keywords: 'ai assist mode chat',
+      run: () => setAIPanelMode('assist'),
+    },
+    {
+      id: 'ai-mode-transform',
+      label: 'Switch AI Mode: Transform',
+      keywords: 'ai transform mode rewrite summarize',
+      run: () => setAIPanelMode('transform'),
+    },
+    {
+      id: 'toggle-focus-mode',
+      label: focusModeEnabled ? 'Exit Focus Mode' : 'Enter Focus Mode',
+      keywords: 'focus mode distraction free zen',
+      run: () => setFocusModeEnabled(!focusModeEnabled),
+    },
+    {
       id: 'sync-now',
       label: 'Sync Now',
       keywords: 'sync cloud backup now',
@@ -5117,6 +5254,24 @@ function getCommandPaletteItems(): CommandPaletteItem[] {
         if (!provider || !provider.isAuthenticated()) await connectProvider(selectedSyncProviderType);
         else await doSync();
       },
+    },
+    {
+      id: 'sync-provider-gdrive',
+      label: 'Set Sync Provider: Google Drive',
+      keywords: 'sync provider google drive',
+      run: () => setSyncProviderSelection('gdrive'),
+    },
+    {
+      id: 'sync-provider-onedrive',
+      label: 'Set Sync Provider: OneDrive',
+      keywords: 'sync provider onedrive microsoft',
+      run: () => setSyncProviderSelection('onedrive'),
+    },
+    {
+      id: 'sync-provider-dropbox',
+      label: 'Set Sync Provider: Dropbox',
+      keywords: 'sync provider dropbox',
+      run: () => setSyncProviderSelection('dropbox'),
     },
     {
       id: 'move-current-note',
@@ -5559,6 +5714,7 @@ function syncAIPanelUIState(): void {
 async function toggleAIPanel(): Promise<void> {
   const panel = document.getElementById('aiPanel')!;
   const opening = !panel.classList.contains('open');
+  if (opening) closeMobileBottomDrawer();
   panel.classList.toggle('open');
   if (!opening) {
     aiMobileExpanded = false;
@@ -5882,7 +6038,7 @@ function addAIMessage(role: 'user' | 'assistant', content: string): HTMLElement 
 
   const bodyEl = document.createElement('div');
   if (role === 'assistant' && content) {
-    renderMarkdown(content, bodyEl);
+    void renderMarkdownContent(content, bodyEl);
   } else {
     bodyEl.textContent = content;
   }
@@ -6041,7 +6197,7 @@ async function sendAIMessage(): Promise<void> {
   try {
     const result = await dispatchChat(messages, (_token, full) => {
       fullResponse = full;
-      renderMarkdown(full, msgEl);
+      void renderMarkdownContent(full, msgEl);
       msgEl.parentElement!.scrollTop = msgEl.parentElement!.scrollHeight;
     });
     fullResponse = result.text;

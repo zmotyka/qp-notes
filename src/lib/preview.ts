@@ -2,6 +2,8 @@ import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
 import katex from 'katex';
 import mermaid from 'mermaid';
+import 'highlight.js/styles/github-dark.css';
+import 'katex/dist/katex.min.css';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type MdRuleRenderer = (tokens: any[], idx: number, options: any, env: any, self: any) => string;
