@@ -34,9 +34,24 @@ interface VerifyRegisterResponse {
 }
 
 const PASSKEY_API_BASE = (import.meta.env.VITE_PASSKEY_API_BASE || '').trim().replace(/\/+$/, '');
+const PASSKEY_FUNCTION_PATH_MAP: Record<string, string> = {
+  '/api/passkey/register/options': '/registerOptions',
+  '/api/passkey/register/verify': '/registerVerify',
+  '/api/passkey/register/status': '/registerStatus',
+  '/api/passkey/auth/options': '/authOptions',
+  '/api/passkey/auth/verify': '/authVerify',
+};
+
+function isCloudFunctionsEndpointBase(base: string): boolean {
+  return /cloudfunctions\.net$/i.test(base);
+}
 
 function passkeyApiUrl(path: string): string {
   if (!PASSKEY_API_BASE) return path;
+  if (isCloudFunctionsEndpointBase(PASSKEY_API_BASE)) {
+    const functionPath = PASSKEY_FUNCTION_PATH_MAP[path];
+    return `${PASSKEY_API_BASE}${functionPath || path}`;
+  }
   return `${PASSKEY_API_BASE}${path}`;
 }
 
