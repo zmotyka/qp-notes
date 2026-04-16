@@ -77,10 +77,11 @@ let aiVoiceInputListening = false;
 let sidebarTreeCollapsed = false;
 let sidebarFilelistCollapsed = false;
 let workspacePanelHidden = false;
+let noteDetailsPanelHidden = false;
 let selectedSyncProviderType: 'gdrive' | 'onedrive' | 'dropbox' = 'gdrive';
 type SettingsTabId = 'general' | 'sync' | 'ai' | 'security' | 'shortcuts' | 'accessibility';
 let activeSettingsTab: SettingsTabId = 'general';
-type ExplorerTabId = 'library' | 'folders' | 'toc' | 'tags';
+type ExplorerTabId = 'library' | 'folders' | 'tags';
 let activeExplorerTab: ExplorerTabId = 'library';
 type PendingAIAttachment = {
   filename: string;
@@ -179,14 +180,6 @@ function closeIconSvg(size = 14): string {
   return `<svg width="${size}" height="${size}" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 4l8 8M12 4 4 12"/></svg>`;
 }
 
-function chevronUpSvg(size = 10): string {
-  return `<svg width="${size}" height="${size}" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 5-5 5 5"/></svg>`;
-}
-
-function chevronDownSvg(size = 10): string {
-  return `<svg width="${size}" height="${size}" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m3 6 5 5 5-5"/></svg>`;
-}
-
 function setPinButtonState(pinned: boolean): void {
   const pinBtn = document.getElementById('btnPin');
   if (!pinBtn) return;
@@ -217,6 +210,7 @@ function setRawEditorValue(value: string): void {
   const rawInput = getRawEditorInput();
   if (!rawInput) return;
   rawInput.value = value;
+  updateRawGenerationAvailabilityUI();
 }
 
 function getGenerationPromptSystemInput(): HTMLTextAreaElement | null {
@@ -268,6 +262,67 @@ function updateGenerationPromptSummary(): void {
     && templateValue === DEFAULT_MARKDOWN_PROMPT_TEMPLATE;
   const preview = templateValue.replace(/\s+/g, ' ').trim().slice(0, 68) || 'Prompt is empty';
   summary.textContent = isDefault ? 'Default prompt' : `Custom: ${preview}`;
+}
+
+function openGenerationPromptEditor(): void {
+  const overlay = document.getElementById('generationPromptOverlay');
+  if (!overlay) return;
+  overlay.style.display = '';
+}
+
+function closeGenerationPromptEditor(): void {
+  const overlay = document.getElementById('generationPromptOverlay');
+  if (!overlay) return;
+  overlay.style.display = 'none';
+}
+
+function setCompactMenuOpen(triggerId: string, panelId: string, open: boolean): void {
+  const trigger = document.getElementById(triggerId) as HTMLButtonElement | null;
+  const panel = document.getElementById(panelId);
+  if (!trigger || !panel) return;
+  trigger.setAttribute('aria-expanded', String(open));
+  panel.hidden = !open;
+}
+
+function closeCompactMenus(): void {
+  setCompactMenuOpen('btnTopbarMore', 'topbarMoreMenu', false);
+  setCompactMenuOpen('btnEditorMore', 'editorMoreMenu', false);
+  setCompactMenuOpen('btnToggleFormatMore', 'formatMorePanel', false);
+}
+
+function toggleCompactMenu(triggerId: string, panelId: string): void {
+  const trigger = document.getElementById(triggerId) as HTMLButtonElement | null;
+  if (!trigger) return;
+  const willOpen = trigger.getAttribute('aria-expanded') !== 'true';
+  closeCompactMenus();
+  setCompactMenuOpen(triggerId, panelId, willOpen);
+}
+
+function setNotePropertiesExpanded(expanded: boolean): void {
+  notePropertiesExpanded = expanded;
+  const row = document.getElementById('editorMetaRow');
+  const btn = document.getElementById('btnToggleProperties') as HTMLButtonElement | null;
+  if (row) {
+    row.hidden = !expanded;
+    if (expanded) {
+      row.removeAttribute('hidden');
+    } else {
+      row.setAttribute('hidden', '');
+    }
+  }
+  if (btn) {
+    btn.setAttribute('aria-expanded', String(expanded));
+    btn.textContent = expanded ? 'Hide Properties' : 'Properties';
+  }
+}
+
+function setFormattingToolbarExpanded(expanded: boolean): void {
+  const bar = document.getElementById('formattingBar');
+  const btn = document.getElementById('btnToggleFormatBar') as HTMLButtonElement | null;
+  if (!bar || !btn) return;
+  bar.classList.toggle('compact-open', expanded);
+  btn.setAttribute('aria-expanded', String(expanded));
+  btn.textContent = expanded ? 'Hide Format' : 'Format';
 }
 
 function queueSilentNoteSave(delay = 900): void {
@@ -375,17 +430,6 @@ function buildMarkdownGenerationMessages(note: Note, raw: string): ChatMessage[]
     { role: 'system', content: systemPrompt },
     { role: 'user', content: userPrompt.slice(0, 14000) },
   ];
-}
-
-function toggleEditorSection(section: 'raw' | 'markdown' | 'preview'): void {
-  const host = document.querySelector<HTMLElement>(`.editor-section[data-section="${section}"]`);
-  if (!host) return;
-  const collapsed = host.classList.toggle('collapsed');
-  const btn = host.querySelector<HTMLElement>('.editor-section-toggle');
-  if (btn) {
-    btn.setAttribute('aria-expanded', String(!collapsed));
-    btn.innerHTML = collapsed ? chevronDownSvg(10) : chevronUpSvg(10);
-  }
 }
 
 function isMobileViewport(): boolean {
@@ -549,6 +593,44 @@ function setWorkspacePanelHidden(hidden: boolean): void {
     btn.innerHTML = hidden
       ? `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m6 3 5 5-5 5"/></svg>`
       : `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m10 3-5 5 5 5"/></svg>`;
+  }
+  syncPanelToggleButtons();
+}
+
+function setNoteDetailsPanelHidden(hidden: boolean): void {
+  noteDetailsPanelHidden = hidden;
+  const app = document.getElementById('app');
+  app?.classList.toggle('note-details-hidden', hidden);
+  syncPanelToggleButtons();
+}
+
+function syncPanelToggleButtons(): void {
+  const workspaceBtn = document.getElementById('btnTopbarWorkspace') as HTMLButtonElement | null;
+  const detailsBtn = document.getElementById('btnTopbarDetails') as HTMLButtonElement | null;
+  const aiBtn = document.getElementById('btnAI') as HTMLButtonElement | null;
+  const detailsHeaderBtn = document.getElementById('btnToggleNoteDetailsPanel') as HTMLButtonElement | null;
+  const aiOpen = document.getElementById('aiPanel')?.classList.contains('open') ?? false;
+
+  if (workspaceBtn) {
+    workspaceBtn.setAttribute('aria-pressed', String(!workspacePanelHidden));
+    workspaceBtn.title = workspacePanelHidden ? 'Show workspace' : 'Hide workspace';
+    workspaceBtn.textContent = workspacePanelHidden ? 'Show Workspace Panel' : 'Hide Workspace Panel';
+  }
+  if (detailsBtn) {
+    detailsBtn.setAttribute('aria-pressed', String(!noteDetailsPanelHidden));
+    detailsBtn.title = noteDetailsPanelHidden ? 'Show note details' : 'Hide note details';
+    detailsBtn.textContent = noteDetailsPanelHidden ? 'Show Note Details' : 'Hide Note Details';
+  }
+  if (detailsHeaderBtn) {
+    detailsHeaderBtn.setAttribute('aria-pressed', String(!noteDetailsPanelHidden));
+    detailsHeaderBtn.title = noteDetailsPanelHidden ? 'Show note details' : 'Hide note details';
+    detailsHeaderBtn.innerHTML = noteDetailsPanelHidden
+      ? '<svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m6 3 5 5-5 5"/></svg>'
+      : '<svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m10 3-5 5 5 5"/></svg>';
+  }
+  if (aiBtn) {
+    aiBtn.setAttribute('aria-pressed', String(aiOpen));
+    aiBtn.title = aiOpen ? 'Hide AI Assistant' : 'Show AI Assistant';
   }
 }
 
@@ -894,6 +976,8 @@ let llmModulesPromise: Promise<{
 }> | null = null;
 let llmStatusListenerAttached = false;
 let localModelAutoloadPromise: Promise<void> | null = null;
+let currentLLMStatus: LLMStatus = 'idle';
+let currentLLMDetail: string | undefined;
 
 const LOCAL_MODEL_SETTING_KEY = 'llm-local-model-id';
 
@@ -912,6 +996,7 @@ let googleDriveProviderModulePromise: Promise<GoogleDriveProviderModule> | null 
 let oneDriveProviderModulePromise: Promise<OneDriveProviderModule> | null = null;
 let dropboxProviderModulePromise: Promise<DropboxProviderModule> | null = null;
 let authPasskeyModulePromise: Promise<AuthPasskeyModule> | null = null;
+let notePropertiesExpanded = false;
 
 function getUploadModule(): Promise<UploadModule> {
   if (!uploadModulePromise) uploadModulePromise = import('./lib/upload');
@@ -946,6 +1031,41 @@ function getDropboxProviderModule(): Promise<DropboxProviderModule> {
 function getAuthPasskeyModule(): Promise<AuthPasskeyModule> {
   if (!authPasskeyModulePromise) authPasskeyModulePromise = import('./lib/auth-passkey');
   return authPasskeyModulePromise;
+}
+
+function updateRawGenerationAvailabilityUI(): void {
+  const hint = document.getElementById('rawGenerationHint');
+  const hintText = document.getElementById('rawGenerationHintText');
+  const regenerateBtn = document.getElementById('btnRegenerateMarkdown') as HTMLButtonElement | null;
+  if (!hint || !hintText) return;
+
+  const hasRawInput = getRawEditorValue().trim().length > 0;
+  const isReady = currentLLMStatus === 'ready' || currentLLMStatus === 'generating';
+  const isLoading = currentLLMStatus === 'loading';
+  const isError = currentLLMStatus === 'error';
+
+  if (!hasRawInput) {
+    hint.style.display = 'none';
+  } else if (isReady) {
+    hint.style.display = 'none';
+  } else {
+    hint.style.display = 'flex';
+    if (isLoading) {
+      hintText.textContent = `Loading AI model${currentLLMDetail ? ` (${currentLLMDetail})` : ''}. Markdown generation will start when ready.`;
+    } else if (isError) {
+      hintText.textContent = `AI model error${currentLLMDetail ? `: ${currentLLMDetail}` : ''}. Load a model to generate markdown from raw notes.`;
+    } else {
+      hintText.textContent = 'AI model is not loaded. Load a model to generate markdown from raw notes.';
+    }
+  }
+
+  if (regenerateBtn) {
+    const canRegenerate = hasRawInput && isReady;
+    regenerateBtn.disabled = !canRegenerate;
+    regenerateBtn.title = canRegenerate
+      ? 'Regenerate Markdown from Raw Draft'
+      : 'Load an AI model to enable markdown generation';
+  }
 }
 
 function setAIProgressState(text?: string, progress?: number): void {
@@ -1248,6 +1368,7 @@ function renderApp(): void {
   app.innerHTML = `
     <!-- Topbar -->
     <header class="topbar shell-chrome">
+      <h1 class="sr-only">Zed Note</h1>
       <div class="topbar-mobile-controls">
         <button class="btn btn-ghost btn-icon btn-sm mobile-only" id="btnMobileExplorer" title="Open Explorer">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2.5 4h11M2.5 8h11M2.5 12h11"/></svg>
@@ -1275,33 +1396,29 @@ function renderApp(): void {
           <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2" fill="none"/></svg>
           New Note
         </button>
-        <button class="btn btn-ghost btn-sm" id="btnNewFromTemplate" title="New from Template">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2.5h5l3 3V13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z"/><path d="M9 2.5V6h3"/></svg>
-        </button>
-        <button class="btn btn-ghost btn-icon btn-sm" id="btnSettings" title="Settings">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 10a2 2 0 100-4 2 2 0 000 4zm6.32-1.906l-1.07-.604a5.27 5.27 0 000-1.98l1.07-.604a.5.5 0 00.18-.68l-1-1.73a.5.5 0 00-.68-.18l-1.07.604A5.3 5.3 0 0010 2.2V.99a.5.5 0 00-.5-.5h-2a.5.5 0 00-.5.5v1.21a5.3 5.3 0 00-1.75.72L4.18 2.32a.5.5 0 00-.68.18l-1 1.73a.5.5 0 00.18.68l1.07.604a5.27 5.27 0 000 1.98l-1.07.604a.5.5 0 00-.18.68l1 1.73a.5.5 0 00.68.18l1.07-.604c.521.326 1.11.567 1.75.72V14.01a.5.5 0 00.5.5h2a.5.5 0 00.5-.5v-1.21a5.3 5.3 0 001.75-.72l1.07.604a.5.5 0 00.68-.18l1-1.73a.5.5 0 00-.18-.68z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
-        </button>
-        <button class="btn btn-ghost btn-sm" id="btnAI" title="AI Assistant" style="display:none;">
+        <button class="btn btn-ghost btn-sm desktop-panel-toggle" id="btnAI" title="AI Assistant" aria-pressed="false">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.9 9.3 5l3.2 1.2-3.2 1.2L8 10.5 6.7 7.4 3.5 6.2 6.7 5 8 1.9z"/><path d="M12.2 9.6 13 11.4l1.8.8-1.8.8-.8 1.8-.8-1.8-1.8-.8 1.8-.8.8-1.8z"/></svg>
           AI
         </button>
+        <div class="ui-compact-menu">
+          <button class="btn btn-ghost btn-icon btn-sm" id="btnTopbarMore" title="More actions" aria-label="More actions" aria-expanded="false">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><circle cx="3" cy="8" r="1.3"/><circle cx="8" cy="8" r="1.3"/><circle cx="13" cy="8" r="1.3"/></svg>
+          </button>
+          <div class="ui-compact-menu-panel" id="topbarMoreMenu" hidden>
+            <button class="ui-compact-menu-item" id="btnNewFromTemplate" type="button">New from Template</button>
+            <button class="ui-compact-menu-item" id="btnTopbarWorkspace" type="button" aria-pressed="true">Toggle Workspace Panel</button>
+            <button class="ui-compact-menu-item" id="btnTopbarDetails" type="button" aria-pressed="true">Toggle Note Details</button>
+            <button class="ui-compact-menu-item" id="btnOpenTips" type="button">Help & Tips</button>
+            <button class="ui-compact-menu-item" id="btnSettings" type="button">Settings</button>
+          </div>
+        </div>
       </div>
     </header>
-
-    <!-- Tips Bar -->
-    <div class="tipsbar" id="tipsbar">
-      <span class="tipsbar-icon"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.2a4.3 4.3 0 0 0-2.8 7.6c.5.44.8 1.08.8 1.75h4c0-.67.3-1.3.8-1.75A4.3 4.3 0 0 0 8 2.2z"/><path d="M6.4 13.1h3.2M6.8 14.6h2.4"/></svg></span>
-      <span class="tipsbar-text" id="tipText"></span>
-      <div class="tipsbar-actions">
-        <button class="btn btn-ghost btn-sm btn-compact-xs" id="btnAllTips">All tips</button>
-        <button class="btn btn-ghost btn-icon btn-sm btn-icon-compact" id="btnCollapseTips" title="Collapse">${chevronUpSvg(9)}</button>
-      </div>
-    </div>
 
     <!-- Main Body -->
     <main class="app-body" id="appMain" role="main">
       <!-- Sidebar: Tree -->
-      <aside class="sidebar-tree shell-panel" id="sidebarTree">
+      <aside class="sidebar-tree shell-panel" id="sidebarTree" aria-label="Workspace navigation">
         <div class="sidebar-header">
           <span class="sidebar-header-label">Explorer</span>
           <button class="btn btn-ghost btn-icon btn-sm btn-icon-compact" id="btnToggleSidebarTree" title="Collapse sidebar"></button>
@@ -1310,7 +1427,6 @@ function renderApp(): void {
         <div class="explorer-tabs" role="tablist" aria-label="Explorer tabs">
           <button class="explorer-tab active" type="button" role="tab" aria-selected="true" data-explorer-tab="library">Library</button>
           <button class="explorer-tab" type="button" role="tab" aria-selected="false" data-explorer-tab="folders">Folders</button>
-          <button class="explorer-tab" type="button" role="tab" aria-selected="false" data-explorer-tab="toc">TOC</button>
           <button class="explorer-tab" type="button" role="tab" aria-selected="false" data-explorer-tab="tags">Tags</button>
         </div>
         <div class="tree-list" id="treeList">
@@ -1372,7 +1488,7 @@ function renderApp(): void {
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m10 3-5 5 5 5"/></svg>
       </button>
       <!-- Sidebar: File List -->
-      <aside class="sidebar-filelist shell-panel" id="sidebarFilelist">
+      <aside class="sidebar-filelist shell-panel" id="sidebarFilelist" aria-label="Notes list">
         <div class="filelist-header">
           <span class="filelist-header-title" id="filelistHeaderTitle">Notes Tree</span>
           <button class="btn btn-ghost btn-icon btn-sm btn-icon-compact" id="btnToggleSidebarFilelist" title="Collapse sidebar"></button>
@@ -1397,7 +1513,7 @@ function renderApp(): void {
         <span id="editor-area" tabindex="-1" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;"></span>
         <div class="empty-state" id="emptyState">
           <div class="empty-state-icon"><svg width="30" height="30" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2.5h5l3 3V13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z"/><path d="M9 2.5V6h3"/><path d="M5.4 9.2h5.2M5.4 11.2h3.6"/></svg></div>
-          <h3>Welcome to Zed Note</h3>
+          <h2>Welcome to Zed Note</h2>
           <p>Create a new note or select one from the sidebar to get started.</p>
           <button class="btn btn-primary" id="btnEmptyNew"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2.5v11M2.5 8h11"/></svg>Create your first note</button>
         </div>
@@ -1414,16 +1530,23 @@ function renderApp(): void {
                   <span class="save-indicator-meta" id="saveIndicatorMeta">All changes up to date</span>
                 </div>
               </div>
-              <span class="sync-badge synced" id="syncBadge" title="Synced"></span>
+              <button class="btn btn-ghost btn-sm" id="btnToggleProperties" type="button" aria-expanded="false">Properties</button>
               <button class="btn btn-ghost btn-sm" id="btnSave" title="Save (Ctrl+S)"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 2.5h8l2 2V13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M5 2.5v4h5v-4M5.2 11h5.6"/></svg> Save</button>
-              <button class="btn btn-ghost btn-sm" id="btnHistory" title="Version History"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="5.2"/><path d="M8 5.2v3.1l2 1.4"/></svg></button>
-              <button class="btn btn-ghost btn-sm" id="btnPin" title="Pin/Unpin"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="m8 2.3 1.6 3.3 3.6.5-2.6 2.5.6 3.6L8 10.5l-3.2 1.7.6-3.6-2.6-2.5 3.6-.5L8 2.3z"/></svg></button>
-              <button class="btn btn-ghost btn-sm" id="btnDelete" title="Delete" style="color:var(--red);"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3.5 4.5h9M6.5 4.5V3h3v1.5M5.2 4.5l.5 8h4.6l.5-8"/></svg></button>
+              <div class="ui-compact-menu">
+                <button class="btn btn-ghost btn-icon btn-sm" id="btnEditorMore" title="Note actions" aria-label="Note actions" aria-expanded="false">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><circle cx="3" cy="8" r="1.3"/><circle cx="8" cy="8" r="1.3"/><circle cx="13" cy="8" r="1.3"/></svg>
+                </button>
+                <div class="ui-compact-menu-panel" id="editorMoreMenu" hidden>
+                  <button class="ui-compact-menu-item" id="btnHistory" type="button">Version History</button>
+                  <button class="ui-compact-menu-item" id="btnPin" type="button">Pin / Unpin</button>
+                  <button class="ui-compact-menu-item danger" id="btnDelete" type="button">Delete Note</button>
+                </div>
+              </div>
             </div>
           </div>
 
           <!-- Tags -->
-          <div class="editor-meta-row">
+          <div class="editor-meta-row" id="editorMetaRow" hidden>
             <span class="editor-meta-label">Tags</span>
             <div id="tagField" class="editor-tag-field" role="group" aria-label="Note tags">
               <div id="tagPills" class="editor-tag-pills"></div>
@@ -1446,32 +1569,36 @@ function renderApp(): void {
 
           <!-- Formatting Toolbar -->
           <div class="editor-formatting" id="formattingBar">
-            <button class="fmt-btn" data-fmt="bold" title="Bold (Ctrl+B)"><strong>B</strong></button>
-            <button class="fmt-btn" data-fmt="italic" title="Italic (Ctrl+I)"><em>I</em></button>
-            <button class="fmt-btn" data-fmt="strikethrough" title="Strikethrough"><s>S</s></button>
-            <span class="fmt-separator"></span>
-            <button class="fmt-btn" data-fmt="h1" title="Heading 1">H1</button>
-            <button class="fmt-btn" data-fmt="h2" title="Heading 2">H2</button>
-            <button class="fmt-btn" data-fmt="h3" title="Heading 3">H3</button>
-            <span class="fmt-separator"></span>
-            <button class="fmt-btn" data-fmt="ul" title="Bullet List">•</button>
-            <button class="fmt-btn" data-fmt="ol" title="Numbered List">1.</button>
-            <button class="fmt-btn" data-fmt="task" title="Task List">✓</button>
-            <span class="fmt-separator"></span>
-            <button class="fmt-btn" data-fmt="code" title="Inline Code">&lt;/&gt;</button>
-            <button class="fmt-btn" data-fmt="codeblock" title="Code Block">[]</button>
-            <button class="fmt-btn" data-fmt="quote" title="Blockquote">"</button>
-            <span class="fmt-separator"></span>
-            <button class="fmt-btn" data-fmt="link" title="Insert Link (Ctrl+Shift+K)"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6.2 9.8 9.8 6.2"/><path d="M5.1 11a2.4 2.4 0 0 1 0-3.4l2.5-2.5a2.4 2.4 0 1 1 3.4 3.4l-.9.9"/><path d="M10.9 5A2.4 2.4 0 0 1 14.3 8.4l-2.5 2.5a2.4 2.4 0 1 1-3.4-3.4l.9-.9"/></svg></button>
-            <button class="fmt-btn" data-fmt="image" title="Insert Image"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2.2" y="2.8" width="11.6" height="10.4" rx="1.4"/><circle cx="6" cy="6.2" r="1.1"/><path d="m3.8 11 2.8-2.4 2.1 1.7 2.2-2.2 1.3 2.9"/></svg></button>
-            <button class="fmt-btn" data-fmt="table" title="Insert Table">▦</button>
-            <button class="fmt-btn" data-fmt="mermaid" title="Insert Mermaid Diagram">◈</button>
-            <button class="fmt-btn" data-fmt="math" title="Insert Math (LaTeX)">∑</button>
-            <span class="fmt-separator"></span>
-            <button class="fmt-btn" data-fmt="hr" title="Horizontal Rule">—</button>
-            <span class="fmt-separator"></span>
-            <button class="fmt-btn" id="btnMic" title="Dictation (Speech-to-Text)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="6" y="2.2" width="4" height="7.1" rx="2"/><path d="M4 7.9a4 4 0 0 0 8 0M8 11.9V14M6.4 14h3.2"/></svg></button>
-            <button class="fmt-btn" id="btnUpload" title="Upload Document (PDF, DOCX, Image)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 2.5v7.2M5.5 5l2.5-2.5L10.5 5"/><rect x="3" y="10" width="10" height="3.5" rx="1"/></svg></button>
+            <button class="btn btn-ghost btn-sm formatting-collapse-toggle" id="btnToggleFormatBar" type="button" aria-expanded="false">Format</button>
+            <div class="editor-formatting-content" id="formattingBarContent">
+              <button class="fmt-btn" data-fmt="bold" title="Bold (Ctrl+B)"><strong>B</strong></button>
+              <button class="fmt-btn" data-fmt="italic" title="Italic (Ctrl+I)"><em>I</em></button>
+              <button class="fmt-btn" data-fmt="h1" title="Heading 1">H1</button>
+              <span class="fmt-separator"></span>
+              <button class="fmt-btn" data-fmt="ul" title="Bullet List">•</button>
+              <button class="fmt-btn" data-fmt="code" title="Inline Code">&lt;/&gt;</button>
+              <span class="fmt-separator"></span>
+              <button class="fmt-btn" data-fmt="link" title="Insert Link (Ctrl+Shift+K)"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6.2 9.8 9.8 6.2"/><path d="M5.1 11a2.4 2.4 0 0 1 0-3.4l2.5-2.5a2.4 2.4 0 1 1 3.4 3.4l-.9.9"/><path d="M10.9 5A2.4 2.4 0 0 1 14.3 8.4l-2.5 2.5a2.4 2.4 0 1 1-3.4-3.4l.9-.9"/></svg></button>
+              <button class="fmt-btn" id="btnUpload" title="Upload Document (PDF, DOCX, Image)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 2.5v7.2M5.5 5l2.5-2.5L10.5 5"/><rect x="3" y="10" width="10" height="3.5" rx="1"/></svg></button>
+              <div class="ui-compact-menu format-more-menu">
+                <button class="fmt-btn" id="btnToggleFormatMore" title="More formatting actions" aria-label="More formatting actions" aria-expanded="false">⋯</button>
+                <div class="ui-compact-menu-panel format-more-panel" id="formatMorePanel" hidden>
+                  <button class="fmt-btn" data-fmt="strikethrough" title="Strikethrough"><s>S</s></button>
+                  <button class="fmt-btn" data-fmt="h2" title="Heading 2">H2</button>
+                  <button class="fmt-btn" data-fmt="h3" title="Heading 3">H3</button>
+                  <button class="fmt-btn" data-fmt="ol" title="Numbered List">1.</button>
+                  <button class="fmt-btn" data-fmt="task" title="Task List">✓</button>
+                  <button class="fmt-btn" data-fmt="codeblock" title="Code Block">[]</button>
+                  <button class="fmt-btn" data-fmt="quote" title="Blockquote">"</button>
+                  <button class="fmt-btn" data-fmt="image" title="Insert Image"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2.2" y="2.8" width="11.6" height="10.4" rx="1.4"/><circle cx="6" cy="6.2" r="1.1"/><path d="m3.8 11 2.8-2.4 2.1 1.7 2.2-2.2 1.3 2.9"/></svg></button>
+                  <button class="fmt-btn" data-fmt="table" title="Insert Table">▦</button>
+                  <button class="fmt-btn" data-fmt="mermaid" title="Insert Mermaid Diagram">◈</button>
+                  <button class="fmt-btn" data-fmt="math" title="Insert Math (LaTeX)">∑</button>
+                  <button class="fmt-btn" data-fmt="hr" title="Horizontal Rule">—</button>
+                  <button class="fmt-btn" id="btnMic" title="Dictation (Speech-to-Text)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="6" y="2.2" width="4" height="7.1" rx="2"/><path d="M4 7.9a4 4 0 0 0 8 0M8 11.9V14M6.4 14h3.2"/></svg></button>
+                </div>
+              </div>
+            </div>
             <input type="file" id="uploadFileInput" accept=".pdf,.docx,.png,.jpg,.jpeg,.webp,.gif,.bmp,.tiff,.txt,.md,.csv,.html" style="display:none;" />
           </div>
 
@@ -1481,29 +1608,18 @@ function renderApp(): void {
               <div class="editor-section-header">
                 <span class="editor-section-title">Raw Draft</span>
                 <div class="editor-section-actions">
+                  <button class="btn btn-ghost btn-sm" id="btnOpenGenerationPrompt" title="Open generation prompt settings">Generation Prompt</button>
+                  <span class="generation-prompt-summary" id="generationPromptSummary">Default prompt</span>
                   <button class="btn btn-ghost btn-sm" id="btnRegenerateMarkdown" title="Regenerate Markdown from Raw Draft">Regenerate</button>
-                  <button class="btn btn-ghost btn-icon btn-sm editor-section-toggle" data-toggle-section="raw" aria-expanded="true">${chevronUpSvg(10)}</button>
                 </div>
               </div>
               <div class="editor-section-body">
                 <textarea id="rawEditorInput" class="raw-editor-input" placeholder="Capture rough ideas, meeting notes, thoughts, and voice transcriptions..."></textarea>
-                <div class="generation-prompt-panel" id="generationPromptPanel">
-                  <button class="generation-prompt-toggle" id="btnToggleGenerationPrompt" type="button" aria-expanded="false">
-                    <span class="generation-prompt-toggle-label">Generation Prompt</span>
-                    <span class="generation-prompt-summary" id="generationPromptSummary">Default prompt</span>
-                  </button>
-                  <div class="generation-prompt-editor" id="generationPromptEditor" hidden>
-                    <label class="generation-prompt-field-label" for="generationPromptSystemInput">System instruction</label>
-                    <textarea id="generationPromptSystemInput" class="generation-prompt-input" rows="3" placeholder="Describe how the model should transform the raw draft into markdown."></textarea>
-                    <label class="generation-prompt-field-label" for="generationPromptTemplateInput">User template</label>
-                    <textarea id="generationPromptTemplateInput" class="generation-prompt-input generation-prompt-template" rows="5" placeholder="Use variables like {{raw}}, {{title}}, and {{markdown}}."></textarea>
-                    <p class="generation-prompt-hint">Variables: <code>{{raw}}</code> <code>{{title}}</code> <code>{{markdown}}</code> <code>{{content}}</code>. Prompt edits are saved per note and take effect on the next regenerate.</p>
-                    <div class="generation-prompt-actions">
-                      <button class="btn btn-ghost btn-sm generation-prompt-library-shortcut" id="btnLoadGenerationPromptFromLibrary" type="button">Load from Prompt Library</button>
-                      <button class="btn btn-ghost btn-sm generation-prompt-library-shortcut" id="btnSaveGenerationPromptToLibrary" type="button">Save to Prompt Library</button>
-                      <button class="btn btn-ghost btn-sm" id="btnResetGenerationPrompt" type="button">Reset to Default</button>
-                      <button class="btn btn-primary btn-sm" id="btnSaveGenerationPrompt" type="button">Save Prompt</button>
-                    </div>
+                <div class="raw-generation-hint" id="rawGenerationHint" style="display:none;">
+                  <span id="rawGenerationHintText">AI model is not loaded. Load a model to generate markdown from raw notes.</span>
+                  <div class="raw-generation-hint-actions">
+                    <button class="btn btn-ghost btn-sm" id="btnRawLoadModel" type="button">Load Cached Model</button>
+                    <button class="btn btn-ghost btn-sm" id="btnRawOpenModelCatalog" type="button">Model Catalog</button>
                   </div>
                 </div>
                 <div class="raw-action-pills" id="rawActionPills" style="display:none;"></div>
@@ -1515,7 +1631,6 @@ function renderApp(): void {
             <section class="editor-section" data-section="markdown">
               <div class="editor-section-header">
                 <span class="editor-section-title">Markdown</span>
-                <button class="btn btn-ghost btn-icon btn-sm editor-section-toggle" data-toggle-section="markdown" aria-expanded="true">${chevronUpSvg(10)}</button>
               </div>
               <div class="editor-section-body">
                 <div class="editor-pane" id="editorPane"></div>
@@ -1527,7 +1642,6 @@ function renderApp(): void {
             <section class="editor-section" data-section="preview">
               <div class="editor-section-header">
                 <span class="editor-section-title">Preview</span>
-                <button class="btn btn-ghost btn-icon btn-sm editor-section-toggle" data-toggle-section="preview" aria-expanded="true">${chevronUpSvg(10)}</button>
               </div>
               <div class="editor-section-body">
                 <div class="preview-pane" id="previewPane"></div>
@@ -1538,8 +1652,13 @@ function renderApp(): void {
       </section>
 
       <!-- Right Details Panel -->
-      <aside class="note-details-panel shell-panel" id="noteDetailsPanel">
-        <div class="note-details-header">Note Details</div>
+      <aside class="note-details-panel shell-panel" id="noteDetailsPanel" aria-label="Note details">
+        <div class="note-details-header">
+          <span>Details</span>
+          <button class="btn btn-ghost btn-icon btn-sm btn-icon-compact" id="btnToggleNoteDetailsPanel" title="Hide note details" aria-label="Hide note details" aria-pressed="true">
+            <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m10 3-5 5 5 5"/></svg>
+          </button>
+        </div>
         <div class="note-details-body">
           <section class="note-details-section" id="noteDetailsTocSection">
             <div class="note-details-section-title">Table of Contents</div>
@@ -1578,7 +1697,8 @@ function renderApp(): void {
       </aside>
 
       <!-- AI Panel (slide-out) -->
-      <aside class="ai-panel" id="aiPanel">
+      <div class="ai-panel-backdrop" id="aiPanelBackdrop"></div>
+      <aside class="ai-panel" id="aiPanel" aria-label="AI assistant">
         <div class="ai-panel-header">
           <span style="font-weight:600;font-size:13px;display:flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="10" height="8" rx="2"/><path d="M8 2.5v2"/><circle cx="6" cy="8" r=".7" fill="currentColor"/><circle cx="10" cy="8" r=".7" fill="currentColor"/><path d="M6 10.3h4"/></svg>AI Assistant</span>
           <div style="display:flex;gap:4px;align-items:center;">
@@ -1628,11 +1748,6 @@ function renderApp(): void {
     </main>
 
     <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
-
-    <button class="ai-fab" id="btnAIFab" title="AI Assistant" aria-label="Open AI Assistant" aria-expanded="false">
-      <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.9 9.3 5l3.2 1.2-3.2 1.2L8 10.5 6.7 7.4 3.5 6.2 6.7 5 8 1.9z"/><path d="M12.2 9.6 13 11.4l1.8.8-1.8.8-.8 1.8-.8-1.8-1.8-.8 1.8-.8.8-1.8z"/></svg>
-      <span>AI</span>
-    </button>
 
     <!-- Statusbar -->
     <footer class="statusbar shell-chrome shell-chrome-footer">
@@ -1897,12 +2012,12 @@ function renderApp(): void {
 
     <!-- History Modal -->
     <div class="modal-overlay" id="historyOverlay" style="display:none;">
-      <div class="modal-dialog" style="width:700px;max-height:80vh;overflow-y:auto;">
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:16px;border-bottom:1px solid var(--border);">
-          <h3 style="margin:0;font-size:15px;font-weight:600;">Version History</h3>
+      <div class="modal-dialog modal-dialog-lg modal-dialog-scroll">
+        <div class="modal-header">
+          <h3 class="modal-title">Version History</h3>
           <button class="btn btn-ghost btn-icon btn-sm" id="btnCloseHistory" style="font-size:14px;">×</button>
         </div>
-        <div style="padding:16px;">
+        <div class="modal-body">
           <div id="historyList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;max-height:150px;overflow-y:auto;"></div>
           <div id="historyDiff" style="font-family:monospace;font-size:12px;line-height:1.5;white-space:pre-wrap;max-height:350px;overflow-y:auto;"></div>
         </div>
@@ -1911,15 +2026,15 @@ function renderApp(): void {
 
     <!-- Conflict Modal -->
     <div class="modal-overlay" id="conflictOverlay" style="display:none;">
-      <div class="modal-dialog" style="width:700px;max-height:80vh;overflow-y:auto;">
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:16px;border-bottom:1px solid var(--border);">
-          <h3 style="margin:0;font-size:15px;font-weight:600;">Sync Conflict</h3>
+      <div class="modal-dialog modal-dialog-lg modal-dialog-scroll">
+        <div class="modal-header">
+          <h3 class="modal-title">Sync Conflict</h3>
           <button class="btn btn-ghost btn-icon btn-sm" id="btnCloseConflict" style="font-size:14px;">×</button>
         </div>
-        <div style="padding:16px;">
+        <div class="modal-body">
           <p style="font-size:12px;color:var(--text3);margin:0 0 12px;">This note was changed both locally and remotely. Choose which version to keep:</p>
           <div id="conflictDiff" style="font-family:monospace;font-size:12px;line-height:1.5;white-space:pre-wrap;max-height:300px;overflow-y:auto;margin-bottom:12px;"></div>
-          <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <div class="modal-actions">
             <button class="btn btn-ghost btn-sm" id="btnKeepLocal">Keep Local</button>
             <button class="btn btn-primary btn-sm" id="btnKeepRemote">Keep Remote</button>
           </div>
@@ -1929,12 +2044,12 @@ function renderApp(): void {
 
     <!-- Model Catalog Modal -->
     <div class="modal-overlay" id="modelCatalogOverlay" style="display:none;">
-      <div class="modal-dialog" style="width:560px;max-height:80vh;overflow-y:auto;">
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:16px;border-bottom:1px solid var(--border);">
-          <h3 style="margin:0;font-size:15px;font-weight:600;">Model Catalog</h3>
+      <div class="modal-dialog modal-dialog-md modal-dialog-scroll">
+        <div class="modal-header">
+          <h3 class="modal-title">Model Catalog</h3>
           <button class="btn btn-ghost btn-icon btn-sm" id="btnCloseModelCatalog" style="font-size:14px;">×</button>
         </div>
-        <div style="padding:16px;">
+        <div class="modal-body">
           <div id="gpuInfo" style="font-size:11px;color:var(--text3);margin-bottom:12px;"></div>
           <div id="modelCatalogList" style="display:flex;flex-direction:column;gap:8px;"></div>
         </div>
@@ -1983,6 +2098,30 @@ function renderApp(): void {
           <div style="display:flex;gap:8px;justify-content:flex-end;">
             <button class="btn btn-ghost btn-sm" id="btnCancelPromptEditor">Cancel</button>
             <button class="btn btn-primary btn-sm" id="btnSavePromptEditor">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Generation Prompt Modal -->
+    <div class="modal-overlay" id="generationPromptOverlay" style="display:none;">
+      <div class="modal-dialog" style="width:620px;max-height:85vh;overflow-y:auto;">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:16px;border-bottom:1px solid var(--border);">
+          <h3 style="margin:0;font-size:15px;font-weight:600;">Generation Prompt</h3>
+          <button class="btn btn-ghost btn-icon btn-sm" id="btnCloseGenerationPrompt" style="font-size:14px;">×</button>
+        </div>
+        <div style="padding:16px;display:flex;flex-direction:column;gap:10px;">
+          <label class="generation-prompt-field-label" for="generationPromptSystemInput">System instruction</label>
+          <textarea id="generationPromptSystemInput" class="generation-prompt-input" rows="3" placeholder="Describe how the model should transform the raw draft into markdown."></textarea>
+          <label class="generation-prompt-field-label" for="generationPromptTemplateInput">User template</label>
+          <textarea id="generationPromptTemplateInput" class="generation-prompt-input generation-prompt-template" rows="6" placeholder="Use variables like {{raw}}, {{title}}, and {{markdown}}."></textarea>
+          <p class="generation-prompt-hint">Variables: <code>{{raw}}</code> <code>{{title}}</code> <code>{{markdown}}</code> <code>{{content}}</code>. Prompt edits are saved per note and take effect on the next regenerate.</p>
+          <div class="generation-prompt-actions">
+            <button class="btn btn-ghost btn-sm generation-prompt-library-shortcut" id="btnLoadGenerationPromptFromLibrary" type="button">Load from Prompt Library</button>
+            <button class="btn btn-ghost btn-sm generation-prompt-library-shortcut" id="btnSaveGenerationPromptToLibrary" type="button">Save to Prompt Library</button>
+            <button class="btn btn-ghost btn-sm" id="btnResetGenerationPrompt" type="button">Reset to Default</button>
+            <button class="btn btn-primary btn-sm" id="btnSaveGenerationPrompt" type="button">Save Prompt</button>
+            <button class="btn btn-ghost btn-sm" id="btnCancelGenerationPrompt" type="button">Close</button>
           </div>
         </div>
       </div>
@@ -2099,24 +2238,49 @@ async function init(): Promise<void> {
   renderApp();
   mergeWorkspacePanels();
   setWorkspacePanelHidden(false);
+  setNoteDetailsPanelHidden(true);
   document.getElementById('btnWorkspaceEdgeToggle')?.addEventListener('click', () => setWorkspacePanelHidden(!workspacePanelHidden));
+  document.getElementById('btnTopbarWorkspace')?.addEventListener('click', () => setWorkspacePanelHidden(!workspacePanelHidden));
+  document.getElementById('btnTopbarDetails')?.addEventListener('click', () => setNoteDetailsPanelHidden(!noteDetailsPanelHidden));
+  document.getElementById('btnToggleNoteDetailsPanel')?.addEventListener('click', () => setNoteDetailsPanelHidden(!noteDetailsPanelHidden));
+  document.getElementById('btnTopbarMore')?.addEventListener('click', (event) => {
+    event.stopPropagation();
+    toggleCompactMenu('btnTopbarMore', 'topbarMoreMenu');
+  });
+  document.getElementById('btnEditorMore')?.addEventListener('click', (event) => {
+    event.stopPropagation();
+    toggleCompactMenu('btnEditorMore', 'editorMoreMenu');
+  });
+  document.getElementById('btnToggleFormatMore')?.addEventListener('click', (event) => {
+    event.stopPropagation();
+    toggleCompactMenu('btnToggleFormatMore', 'formatMorePanel');
+  });
+  document.getElementById('btnToggleFormatBar')?.addEventListener('click', () => {
+    const expanded = document.getElementById('formattingBar')?.classList.contains('compact-open') ?? false;
+    setFormattingToolbarExpanded(!expanded);
+  });
+  document.getElementById('btnToggleProperties')?.addEventListener('click', () => {
+    setNotePropertiesExpanded(!notePropertiesExpanded);
+  });
+  document.querySelectorAll('.ui-compact-menu-item').forEach((el) => {
+    el.addEventListener('click', () => closeCompactMenus());
+  });
+  document.addEventListener('click', (event) => {
+    const target = event.target as HTMLElement | null;
+    if (!target?.closest('.ui-compact-menu')) closeCompactMenus();
+    if (!target?.closest('#formattingBar')) setFormattingToolbarExpanded(false);
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      closeCompactMenus();
+      setFormattingToolbarExpanded(false);
+    }
+  });
   modernizeDialogCloseIcons();
   wireCollapsibleExplorerSections();
   wireExplorerTabs();
 
-  // Init tips
-  initTips((tip: Tip) => {
-    const tipText = document.getElementById('tipText');
-    if (tipText) tipText.innerHTML = tip.text;
-  });
-
-  // Tips collapse/expand
-  const tipsbar = document.getElementById('tipsbar')!;
-  document.getElementById('btnCollapseTips')?.addEventListener('click', () => {
-    tipsbar.classList.toggle('collapsed');
-    const btn = document.getElementById('btnCollapseTips')!;
-    btn.innerHTML = tipsbar.classList.contains('collapsed') ? chevronDownSvg(9) : chevronUpSvg(9);
-  });
+  initTips(() => {});
 
   document.getElementById('btnMobileExplorer')?.addEventListener('click', () => toggleMobileDrawer('tree'));
   document.getElementById('btnMobileNotes')?.addEventListener('click', () => toggleMobileDrawer('notes'));
@@ -2131,8 +2295,7 @@ async function init(): Promise<void> {
     });
   });
 
-  // All Tips modal
-  document.getElementById('btnAllTips')?.addEventListener('click', showAllTipsModal);
+  document.getElementById('btnOpenTips')?.addEventListener('click', showAllTipsModal);
 
   // Load notes & render file list
   await refreshFileList();
@@ -2270,27 +2433,33 @@ async function init(): Promise<void> {
     });
   });
 
-  document.querySelectorAll<HTMLElement>('[data-toggle-section]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const section = btn.dataset.toggleSection as 'raw' | 'markdown' | 'preview' | undefined;
-      if (!section) return;
-      toggleEditorSection(section);
-    });
-  });
-
   document.getElementById('btnRegenerateMarkdown')?.addEventListener('click', () => {
     if (currentNote) currentNote.markdownDirty = false;
     const raw = getRawEditorValue();
+    if (!raw.trim()) {
+      setStatus('Add raw draft text before regenerating markdown.');
+      return;
+    }
     void generateMarkdownFromRaw(raw);
   });
+  document.getElementById('btnRawLoadModel')?.addEventListener('click', () => {
+    void tryLoadModelForRawMarkdown();
+  });
+  document.getElementById('btnRawOpenModelCatalog')?.addEventListener('click', () => {
+    openModelCatalog();
+  });
 
-  document.getElementById('btnToggleGenerationPrompt')?.addEventListener('click', () => {
-    const toggle = document.getElementById('btnToggleGenerationPrompt');
-    const editorEl = document.getElementById('generationPromptEditor');
-    if (!toggle || !editorEl) return;
-    const expanded = toggle.getAttribute('aria-expanded') === 'true';
-    toggle.setAttribute('aria-expanded', expanded ? 'false' : 'true');
-    editorEl.hidden = expanded;
+  document.getElementById('btnOpenGenerationPrompt')?.addEventListener('click', () => {
+    openGenerationPromptEditor();
+  });
+  document.getElementById('btnCloseGenerationPrompt')?.addEventListener('click', () => {
+    closeGenerationPromptEditor();
+  });
+  document.getElementById('btnCancelGenerationPrompt')?.addEventListener('click', () => {
+    closeGenerationPromptEditor();
+  });
+  document.getElementById('generationPromptOverlay')?.addEventListener('click', (event) => {
+    if (event.target === event.currentTarget) closeGenerationPromptEditor();
   });
 
   const handleGenerationPromptInput = () => {
@@ -2313,6 +2482,7 @@ async function init(): Promise<void> {
     syncGenerationPromptDraftFromInputs();
     await saveCurrentNote(true);
     setStatus('Generation prompt saved');
+    closeGenerationPromptEditor();
   });
 
   document.getElementById('btnLoadGenerationPromptFromLibrary')?.addEventListener('click', () => {
@@ -2326,6 +2496,7 @@ async function init(): Promise<void> {
   document.getElementById('rawEditorInput')?.addEventListener('input', (e: Event) => {
     const raw = (e.target as HTMLTextAreaElement).value;
     if (currentNote) currentNote.rawContent = raw;
+    updateRawGenerationAvailabilityUI();
     scheduleActionPillsGeneration(raw);
     scheduleMarkdownAutogeneration(raw);
     if (autoSaveTimer) clearTimeout(autoSaveTimer);
@@ -2339,6 +2510,7 @@ async function init(): Promise<void> {
     const target = (e.target as HTMLElement).closest<HTMLElement>('[data-fmt]');
     if (!target || !editor) return;
     handleFormat(target.dataset.fmt!);
+    closeCompactMenus();
   });
 
   // Wire up save
@@ -2689,10 +2861,8 @@ async function init(): Promise<void> {
   document.getElementById('btnAI')?.addEventListener('click', () => {
     void toggleAIPanel();
   });
-  document.getElementById('btnAIFab')?.addEventListener('click', () => {
-    void toggleAIPanel();
-  });
   document.getElementById('btnAIPanelClose')?.addEventListener('click', () => { void closeAIPanel(); });
+  document.getElementById('aiPanelBackdrop')?.addEventListener('click', () => { void closeAIPanel(); });
   document.getElementById('btnAIMobileExpand')?.addEventListener('click', toggleAIMobileExpanded);
   document.getElementById('btnAIModels')?.addEventListener('click', () => {
     void openModelCatalog();
@@ -2827,6 +2997,9 @@ async function init(): Promise<void> {
   document.getElementById('aiInput')?.addEventListener('input', () => updateAIComposerUI());
 
   updateAIStatus('idle');
+  syncPanelToggleButtons();
+  setNotePropertiesExpanded(false);
+  setFormattingToolbarExpanded(false);
   renderPendingAIAttachment();
   updateAIComposerUI();
   syncAIPanelUIState();
@@ -3224,11 +3397,9 @@ function getVisibleExplorerSections(): HTMLElement[] {
 }
 
 function applyExplorerTabVisibility(): void {
-  const sectionTabMap: Record<string, ExplorerTabId> = {
+  const sectionTabMap: Partial<Record<string, ExplorerTabId>> = {
     library: 'library',
     folders: 'folders',
-    toc: 'toc',
-    backlinks: 'toc',
     tags: 'tags',
   };
 
@@ -3236,7 +3407,7 @@ function applyExplorerTabVisibility(): void {
     const sectionId = section.dataset.sectionId;
     if (!sectionId) return;
     const mappedTab = sectionTabMap[sectionId];
-    const hiddenByTab = mappedTab !== activeExplorerTab;
+    const hiddenByTab = mappedTab ? mappedTab !== activeExplorerTab : true;
     section.classList.toggle('explorer-tab-hidden', hiddenByTab);
   });
 
@@ -4043,16 +4214,38 @@ function scheduleActionPillsGeneration(raw: string): void {
 
 async function generateMarkdownFromRaw(raw: string): Promise<void> {
   const trimmed = raw.trim();
-  if (!trimmed || !editor || !currentNote) return;
+  if (!trimmed || !editor || !currentNote) {
+    setStatus('Add some raw draft text first.');
+    return;
+  }
   if (currentNote.markdownDirty) return;
 
   const seq = ++markdownGenerationSeq;
 
   try {
-    const { dispatchModule } = await ensureLLMRuntime();
-    const { text: generated } = await dispatchModule.dispatchChat(
+    const { engineModule } = await ensureLLMRuntime();
+    let llmStatus = engineModule.llmEngine.getStatus();
+
+    // Best effort auto-load if a cached local model exists.
+    if (llmStatus === 'idle') {
+      await ensureAutoLoadedLocalModel();
+      llmStatus = engineModule.llmEngine.getStatus();
+    }
+
+    if (llmStatus === 'loading') {
+      setStatus('AI model is still loading. Try again in a few seconds.');
+      updateRawGenerationAvailabilityUI();
+      return;
+    }
+
+    if (llmStatus !== 'ready') {
+      setStatus('Load an AI model to generate markdown from raw notes.');
+      updateRawGenerationAvailabilityUI();
+      return;
+    }
+
+    const generated = await engineModule.llmEngine.chatComplete(
       buildMarkdownGenerationMessages(currentNote, trimmed),
-      () => {},
       { maxTokens: 1800, temperature: 0.2 },
     );
 
@@ -4068,8 +4261,40 @@ async function generateMarkdownFromRaw(raw: string): Promise<void> {
     updateTOC(generated);
     scheduleTagSave();
     saveCurrentNote(true);
-  } catch {
+    setStatus('Markdown regenerated from raw draft.');
+  } catch (error) {
     applyingProgrammaticMarkdownUpdate = false;
+    const message = error instanceof Error ? error.message : 'Markdown regeneration failed';
+    setStatus(`Could not regenerate markdown: ${message}`);
+    console.error('Markdown regeneration failed:', error);
+  }
+}
+
+async function tryLoadModelForRawMarkdown(): Promise<void> {
+  const triggerBtn = document.getElementById('btnRawLoadModel') as HTMLButtonElement | null;
+  if (triggerBtn) {
+    triggerBtn.disabled = true;
+    triggerBtn.textContent = 'Loading…';
+  }
+
+  try {
+    await ensureAutoLoadedLocalModel();
+    const { engineModule } = await ensureLLMRuntime();
+    if (engineModule.llmEngine.getStatus() !== 'ready') {
+      setStatus('No cached model available. Pick a model from the catalog.');
+      openModelCatalog();
+    } else {
+      setStatus('Model loaded. Markdown generation is ready.');
+    }
+  } catch {
+    setStatus('Could not load a cached model. Open Model Catalog to choose one.');
+    openModelCatalog();
+  } finally {
+    if (triggerBtn) {
+      triggerBtn.disabled = false;
+      triggerBtn.textContent = 'Load Cached Model';
+    }
+    updateRawGenerationAvailabilityUI();
   }
 }
 
@@ -4550,9 +4775,11 @@ function updateWordCount(content: string): void {
 
 /* ─── Helpers ─── */
 function updateSyncBadge(status: string): void {
-  const badge = document.getElementById('syncBadge')!;
-  badge.className = `sync-badge ${status}`;
-  badge.title = status.charAt(0).toUpperCase() + status.slice(1);
+  const badge = document.getElementById('syncBadge');
+  if (badge) {
+    badge.className = `sync-badge ${status}`;
+    badge.title = status.charAt(0).toUpperCase() + status.slice(1);
+  }
 
   if (status === 'synced') {
     setSyncVisualState('synced');
@@ -5321,11 +5548,11 @@ let aiChatHistory: ChatMessage[] = [];
 
 function syncAIPanelUIState(): void {
   const panel = document.getElementById('aiPanel');
-  const fab = document.getElementById('btnAIFab');
-  if (!panel || !fab) return;
+  const backdrop = document.getElementById('aiPanelBackdrop');
+  if (!panel) return;
   const open = panel.classList.contains('open');
-  fab.setAttribute('aria-expanded', String(open));
-  fab.classList.toggle('active', open);
+  if (backdrop) backdrop.classList.toggle('open', open);
+  syncPanelToggleButtons();
   syncAIMobileModeUI();
 }
 
@@ -5445,6 +5672,8 @@ async function renderModelCatalog(): Promise<void> {
 
 function updateAIStatus(status: LLMStatus, detail?: string): void {
   const nameEl = document.getElementById('aiModelName')!;
+  currentLLMStatus = status;
+  currentLLMDetail = detail;
 
   nameEl.style.color = 'var(--text3)';
 
@@ -5477,6 +5706,7 @@ function updateAIStatus(status: LLMStatus, detail?: string): void {
   }
 
   updateAIComposerUI();
+  updateRawGenerationAvailabilityUI();
 }
 
 function renderPendingAIAttachment(): void {

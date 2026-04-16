@@ -11,7 +11,7 @@
     "grepInvert": null,
     "maxFailures": 0,
     "metadata": {
-      "actualWorkers": 6
+      "actualWorkers": 8
     },
     "preserveOutput": "always",
     "projects": [
@@ -20,7 +20,7 @@
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 6
+          "actualWorkers": 8
         },
         "id": "laptop",
         "name": "laptop",
@@ -36,7 +36,7 @@
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 6
+          "actualWorkers": 8
         },
         "id": "tablet",
         "name": "tablet",
@@ -52,7 +52,7 @@
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 6
+          "actualWorkers": 8
         },
         "id": "iphone",
         "name": "iphone",
@@ -98,6 +98,238 @@
   },
   "suites": [
     {
+      "title": "e2e\\accessibility.spec.ts",
+      "file": "e2e/accessibility.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "a11y baseline scan",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "laptop",
+              "projectName": "laptop",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 21613,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "No accessibility violations detected!\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:46:43.508Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "cb4d96879b22e77d8b2c-18cc5e6c5c33aedb40cd",
+          "file": "e2e/accessibility.spec.ts",
+          "line": 5,
+          "column": 1
+        },
+        {
+          "title": "a11y baseline scan",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "tablet",
+              "projectName": "tablet",
+              "results": [
+                {
+                  "workerIndex": 8,
+                  "parallelIndex": 2,
+                  "status": "passed",
+                  "duration": 15842,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "No accessibility violations detected!\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:47:34.647Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "cb4d96879b22e77d8b2c-c1d8ce52ba47a2e8e1db",
+          "file": "e2e/accessibility.spec.ts",
+          "line": 5,
+          "column": 1
+        },
+        {
+          "title": "a11y baseline scan",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone",
+              "projectName": "iphone",
+              "results": [
+                {
+                  "workerIndex": 19,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 22243,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "No accessibility violations detected!\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:48:32.792Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "cb4d96879b22e77d8b2c-f351718c9309972f0c58",
+          "file": "e2e/accessibility.spec.ts",
+          "line": 5,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "e2e\\ai-panel.spec.ts",
+      "file": "e2e/ai-panel.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "ai panel controls render",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "laptop",
+              "projectName": "laptop",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 14851,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:46:43.267Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "04b593bb5fa89189da1d-9da5b9e8c9488c2fdc80",
+          "file": "e2e/ai-panel.spec.ts",
+          "line": 4,
+          "column": 1
+        },
+        {
+          "title": "ai panel controls render",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "tablet",
+              "projectName": "tablet",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 14936,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:47:34.545Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "04b593bb5fa89189da1d-2803064155b16dfee2dc",
+          "file": "e2e/ai-panel.spec.ts",
+          "line": 4,
+          "column": 1
+        },
+        {
+          "title": "ai panel controls render",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone",
+              "projectName": "iphone",
+              "results": [
+                {
+                  "workerIndex": 15,
+                  "parallelIndex": 4,
+                  "status": "passed",
+                  "duration": 22095,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:48:32.114Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "04b593bb5fa89189da1d-66139a0f611d623a482b",
+          "file": "e2e/ai-panel.spec.ts",
+          "line": 4,
+          "column": 1
+        }
+      ]
+    },
+    {
       "title": "e2e\\backup.spec.ts",
       "file": "e2e/backup.spec.ts",
       "column": 0,
@@ -116,15 +348,15 @@
               "projectName": "laptop",
               "results": [
                 {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
+                  "workerIndex": 2,
+                  "parallelIndex": 2,
                   "status": "passed",
-                  "duration": 11449,
+                  "duration": 16905,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-04-16T10:46:27.016Z",
+                  "startTime": "2026-04-16T14:46:43.326Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -150,15 +382,15 @@
               "projectName": "tablet",
               "results": [
                 {
-                  "workerIndex": 2,
-                  "parallelIndex": 2,
+                  "workerIndex": 10,
+                  "parallelIndex": 4,
                   "status": "passed",
-                  "duration": 9407,
+                  "duration": 15685,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-04-16T10:46:26.889Z",
+                  "startTime": "2026-04-16T14:47:36.749Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -184,15 +416,15 @@
               "projectName": "iphone",
               "results": [
                 {
-                  "workerIndex": 4,
-                  "parallelIndex": 4,
+                  "workerIndex": 17,
+                  "parallelIndex": 1,
                   "status": "passed",
-                  "duration": 12125,
+                  "duration": 13727,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-04-16T10:46:27.041Z",
+                  "startTime": "2026-04-16T14:48:32.105Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -202,6 +434,116 @@
           ],
           "id": "5f79354899de512e7b7e-844f96d32b526e93e8e8",
           "file": "e2e/backup.spec.ts",
+          "line": 4,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "e2e\\command-palette.spec.ts",
+      "file": "e2e/command-palette.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "command palette opens via ctrl+k",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "laptop",
+              "projectName": "laptop",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 3,
+                  "status": "passed",
+                  "duration": 14578,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:46:43.326Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "4df3761019bcac40d82a-68d82c5fadb19303bfa9",
+          "file": "e2e/command-palette.spec.ts",
+          "line": 4,
+          "column": 1
+        },
+        {
+          "title": "command palette opens via ctrl+k",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "tablet",
+              "projectName": "tablet",
+              "results": [
+                {
+                  "workerIndex": 11,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 19091,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:47:36.751Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "4df3761019bcac40d82a-373df82bd7057a5b83f9",
+          "file": "e2e/command-palette.spec.ts",
+          "line": 4,
+          "column": 1
+        },
+        {
+          "title": "command palette opens via ctrl+k",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone",
+              "projectName": "iphone",
+              "results": [
+                {
+                  "workerIndex": 18,
+                  "parallelIndex": 5,
+                  "status": "passed",
+                  "duration": 12914,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:48:32.045Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "4df3761019bcac40d82a-052ce2495ed1b5741f43",
+          "file": "e2e/command-palette.spec.ts",
           "line": 4,
           "column": 1
         }
@@ -226,15 +568,15 @@
               "projectName": "laptop",
               "results": [
                 {
-                  "workerIndex": 1,
-                  "parallelIndex": 1,
+                  "workerIndex": 4,
+                  "parallelIndex": 4,
                   "status": "passed",
-                  "duration": 11529,
+                  "duration": 18049,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-04-16T10:46:26.878Z",
+                  "startTime": "2026-04-16T14:46:43.391Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -260,15 +602,15 @@
               "projectName": "tablet",
               "results": [
                 {
-                  "workerIndex": 3,
-                  "parallelIndex": 3,
+                  "workerIndex": 12,
+                  "parallelIndex": 5,
                   "status": "passed",
-                  "duration": 10502,
+                  "duration": 19302,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-04-16T10:46:26.931Z",
+                  "startTime": "2026-04-16T14:47:36.796Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -294,15 +636,15 @@
               "projectName": "iphone",
               "results": [
                 {
-                  "workerIndex": 5,
-                  "parallelIndex": 5,
+                  "workerIndex": 16,
+                  "parallelIndex": 6,
                   "status": "passed",
-                  "duration": 11824,
+                  "duration": 15085,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-04-16T10:46:26.931Z",
+                  "startTime": "2026-04-16T14:48:32.252Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -316,14 +658,3291 @@
           "column": 1
         }
       ]
+    },
+    {
+      "title": "e2e\\formatting-toolbar.spec.ts",
+      "file": "e2e/formatting-toolbar.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "formatting toolbar exists in editor",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "laptop",
+              "projectName": "laptop",
+              "results": [
+                {
+                  "workerIndex": 5,
+                  "parallelIndex": 5,
+                  "status": "passed",
+                  "duration": 21526,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:46:43.648Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "557f2b80191b0b22fce1-c36037101dfc12a6cae3",
+          "file": "e2e/formatting-toolbar.spec.ts",
+          "line": 4,
+          "column": 1
+        },
+        {
+          "title": "formatting toolbar exists in editor",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "tablet",
+              "projectName": "tablet",
+              "results": [
+                {
+                  "workerIndex": 13,
+                  "parallelIndex": 6,
+                  "status": "passed",
+                  "duration": 15671,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:47:36.945Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "557f2b80191b0b22fce1-22559292480e080d063a",
+          "file": "e2e/formatting-toolbar.spec.ts",
+          "line": 4,
+          "column": 1
+        },
+        {
+          "title": "formatting toolbar exists in editor",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone",
+              "projectName": "iphone",
+              "results": [
+                {
+                  "workerIndex": 20,
+                  "parallelIndex": 2,
+                  "status": "passed",
+                  "duration": 23899,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:48:33.424Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "557f2b80191b0b22fce1-5318497f2ee5cdf614e8",
+          "file": "e2e/formatting-toolbar.spec.ts",
+          "line": 4,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "e2e\\history.spec.ts",
+      "file": "e2e/history.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "history overlay opens",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "laptop",
+              "projectName": "laptop",
+              "results": [
+                {
+                  "workerIndex": 6,
+                  "parallelIndex": 6,
+                  "status": "passed",
+                  "duration": 21261,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:46:43.572Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a4654c76dc38083afc3e-5f84bedf212f5c82af78",
+          "file": "e2e/history.spec.ts",
+          "line": 4,
+          "column": 1
+        },
+        {
+          "title": "history overlay opens",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "tablet",
+              "projectName": "tablet",
+              "results": [
+                {
+                  "workerIndex": 14,
+                  "parallelIndex": 3,
+                  "status": "passed",
+                  "duration": 17792,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:47:52.333Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a4654c76dc38083afc3e-238ea4fd6c14554a9759",
+          "file": "e2e/history.spec.ts",
+          "line": 4,
+          "column": 1
+        },
+        {
+          "title": "history overlay opens",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone",
+              "projectName": "iphone",
+              "results": [
+                {
+                  "workerIndex": 18,
+                  "parallelIndex": 5,
+                  "status": "passed",
+                  "duration": 10174,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:48:47.518Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a4654c76dc38083afc3e-9f8e71601b60f9278a0e",
+          "file": "e2e/history.spec.ts",
+          "line": 4,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "e2e\\keyboard-shortcuts.spec.ts",
+      "file": "e2e/keyboard-shortcuts.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "keyboard shortcuts overlay toggles",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "laptop",
+              "projectName": "laptop",
+              "results": [
+                {
+                  "workerIndex": 7,
+                  "parallelIndex": 7,
+                  "status": "passed",
+                  "duration": 16950,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:46:43.349Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "658cb23f9296d0f13afc-c1edfd18955aacee2550",
+          "file": "e2e/keyboard-shortcuts.spec.ts",
+          "line": 4,
+          "column": 1
+        },
+        {
+          "title": "keyboard shortcuts overlay toggles",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "tablet",
+              "projectName": "tablet",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 9428,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:47:51.108Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "658cb23f9296d0f13afc-0fe092c736fcd08299d9",
+          "file": "e2e/keyboard-shortcuts.spec.ts",
+          "line": 4,
+          "column": 1
+        },
+        {
+          "title": "keyboard shortcuts overlay toggles",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone",
+              "projectName": "iphone",
+              "results": [
+                {
+                  "workerIndex": 17,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 14616,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:48:47.813Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "658cb23f9296d0f13afc-5a99446f0a93c7ed8418",
+          "file": "e2e/keyboard-shortcuts.spec.ts",
+          "line": 4,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "e2e\\note-lifecycle.spec.ts",
+      "file": "e2e/note-lifecycle.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "note lifecycle",
+          "file": "e2e/note-lifecycle.spec.ts",
+          "line": 4,
+          "column": 6,
+          "specs": [
+            {
+              "title": "creates and opens a new note in editor",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "laptop",
+                  "projectName": "laptop",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 7848,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:46:59.791Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "68b5c13d85561a94a203-9c566e3a1fe6abdfd87a",
+              "file": "e2e/note-lifecycle.spec.ts",
+              "line": 11,
+              "column": 3
+            },
+            {
+              "title": "creates and opens a new note in editor",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "tablet",
+                  "projectName": "tablet",
+                  "results": [
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 11129,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:47:51.939Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "68b5c13d85561a94a203-24c510d905536d22c246",
+              "file": "e2e/note-lifecycle.spec.ts",
+              "line": 11,
+              "column": 3
+            },
+            {
+              "title": "creates and opens a new note in editor",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "iphone",
+                  "projectName": "iphone",
+                  "results": [
+                    {
+                      "workerIndex": 16,
+                      "parallelIndex": 6,
+                      "status": "passed",
+                      "duration": 10293,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:48:51.286Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "68b5c13d85561a94a203-3e9ad554504f15f8029d",
+              "file": "e2e/note-lifecycle.spec.ts",
+              "line": 11,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "e2e\\preview-rendering.spec.ts",
+      "file": "e2e/preview-rendering.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "preview pane renders in split workflow",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "laptop",
+              "projectName": "laptop",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 3,
+                  "status": "passed",
+                  "duration": 11066,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:46:59.763Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b48563ac40a2bdded2f0-1e6ba5a08a8c0a5559e9",
+          "file": "e2e/preview-rendering.spec.ts",
+          "line": 4,
+          "column": 1
+        },
+        {
+          "title": "preview pane renders in split workflow",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "tablet",
+              "projectName": "tablet",
+              "results": [
+                {
+                  "workerIndex": 10,
+                  "parallelIndex": 4,
+                  "status": "passed",
+                  "duration": 8920,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:47:53.969Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b48563ac40a2bdded2f0-46ec0c3953b00f9d9cfe",
+          "file": "e2e/preview-rendering.spec.ts",
+          "line": 4,
+          "column": 1
+        },
+        {
+          "title": "preview pane renders in split workflow",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone",
+              "projectName": "iphone",
+              "results": [
+                {
+                  "workerIndex": 15,
+                  "parallelIndex": 4,
+                  "status": "passed",
+                  "duration": 10176,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:48:56.583Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b48563ac40a2bdded2f0-677368534424ff19f8d5",
+          "file": "e2e/preview-rendering.spec.ts",
+          "line": 4,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "e2e\\raw-to-markdown.spec.ts",
+      "file": "e2e/raw-to-markdown.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "raw to markdown surface is available",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "laptop",
+              "projectName": "laptop",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 2,
+                  "status": "passed",
+                  "duration": 14739,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:47:02.178Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "0b00361db11ab291f24b-b889e86ce92032dd2aa5",
+          "file": "e2e/raw-to-markdown.spec.ts",
+          "line": 4,
+          "column": 1
+        },
+        {
+          "title": "raw to markdown surface is available",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "tablet",
+              "projectName": "tablet",
+              "results": [
+                {
+                  "workerIndex": 13,
+                  "parallelIndex": 6,
+                  "status": "passed",
+                  "duration": 11191,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:47:55.037Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "0b00361db11ab291f24b-56c2c04dc47be3515d24",
+          "file": "e2e/raw-to-markdown.spec.ts",
+          "line": 4,
+          "column": 1
+        },
+        {
+          "title": "raw to markdown surface is available",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone",
+              "projectName": "iphone",
+              "results": [
+                {
+                  "workerIndex": 19,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 11577,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:48:57.224Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "0b00361db11ab291f24b-585d2eadd7d6548d12cc",
+          "file": "e2e/raw-to-markdown.spec.ts",
+          "line": 4,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "e2e\\search.spec.ts",
+      "file": "e2e/search.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "search input shows syntax hint",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "laptop",
+              "projectName": "laptop",
+              "results": [
+                {
+                  "workerIndex": 7,
+                  "parallelIndex": 7,
+                  "status": "passed",
+                  "duration": 12833,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:47:02.218Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f4a36a9939d689d57a9d-d88204ea05e75e402880",
+          "file": "e2e/search.spec.ts",
+          "line": 4,
+          "column": 1
+        },
+        {
+          "title": "search input shows syntax hint",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "tablet",
+              "projectName": "tablet",
+              "results": [
+                {
+                  "workerIndex": 11,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 13293,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:47:57.257Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f4a36a9939d689d57a9d-795d74efe2e2fb1e5dae",
+          "file": "e2e/search.spec.ts",
+          "line": 4,
+          "column": 1
+        },
+        {
+          "title": "search input shows syntax hint",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone",
+              "projectName": "iphone",
+              "results": [
+                {
+                  "workerIndex": 18,
+                  "parallelIndex": 5,
+                  "status": "passed",
+                  "duration": 9880,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:48:58.457Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f4a36a9939d689d57a9d-8c94e4f318ceb2eaac48",
+          "file": "e2e/search.spec.ts",
+          "line": 4,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "e2e\\settings.spec.ts",
+      "file": "e2e/settings.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "settings modal opens",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "laptop",
+              "projectName": "laptop",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 4,
+                  "status": "passed",
+                  "duration": 18662,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:47:03.569Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "87418b536bb3b16b9965-bf8a45001e636bd73b69",
+          "file": "e2e/settings.spec.ts",
+          "line": 4,
+          "column": 1
+        },
+        {
+          "title": "settings modal opens",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "tablet",
+              "projectName": "tablet",
+              "results": [
+                {
+                  "workerIndex": 12,
+                  "parallelIndex": 5,
+                  "status": "passed",
+                  "duration": 22259,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:47:59.823Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "87418b536bb3b16b9965-7d98fce92592ab14c144",
+          "file": "e2e/settings.spec.ts",
+          "line": 4,
+          "column": 1
+        },
+        {
+          "title": "settings modal opens",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone",
+              "projectName": "iphone",
+              "results": [
+                {
+                  "workerIndex": 20,
+                  "parallelIndex": 2,
+                  "status": "passed",
+                  "duration": 12853,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:48:59.718Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "87418b536bb3b16b9965-1bd1e7bde9ccc9d32569",
+          "file": "e2e/settings.spec.ts",
+          "line": 4,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "e2e\\tags.spec.ts",
+      "file": "e2e/tags.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "tag editor control exists",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "laptop",
+              "projectName": "laptop",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 13168,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:47:07.839Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ed994363c9b0e318e35a-6b9164b7e6c5c678aa6f",
+          "file": "e2e/tags.spec.ts",
+          "line": 4,
+          "column": 1
+        },
+        {
+          "title": "tag editor control exists",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "tablet",
+              "projectName": "tablet",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 15739,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:48:00.828Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ed994363c9b0e318e35a-918feca67097537d84c6",
+          "file": "e2e/tags.spec.ts",
+          "line": 4,
+          "column": 1
+        },
+        {
+          "title": "tag editor control exists",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone",
+              "projectName": "iphone",
+              "results": [
+                {
+                  "workerIndex": 16,
+                  "parallelIndex": 6,
+                  "status": "passed",
+                  "duration": 19721,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:49:03.473Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ed994363c9b0e318e35a-5e8d30b1b961aff3aa6a",
+          "file": "e2e/tags.spec.ts",
+          "line": 4,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "e2e\\templates.spec.ts",
+      "file": "e2e/templates.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "template overlay opens",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "laptop",
+              "projectName": "laptop",
+              "results": [
+                {
+                  "workerIndex": 6,
+                  "parallelIndex": 6,
+                  "status": "passed",
+                  "duration": 17680,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:47:07.759Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5b49731f145a93920263-1b05ce70023fffa4f975",
+          "file": "e2e/templates.spec.ts",
+          "line": 4,
+          "column": 1
+        },
+        {
+          "title": "template overlay opens",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "tablet",
+              "projectName": "tablet",
+              "results": [
+                {
+                  "workerIndex": 10,
+                  "parallelIndex": 4,
+                  "status": "passed",
+                  "duration": 11229,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:48:06.041Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5b49731f145a93920263-a13a52c4187c99ed0258",
+          "file": "e2e/templates.spec.ts",
+          "line": 4,
+          "column": 1
+        },
+        {
+          "title": "template overlay opens",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone",
+              "projectName": "iphone",
+              "results": [
+                {
+                  "workerIndex": 17,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 19244,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:49:02.654Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5b49731f145a93920263-140ba2a92f4e9a19a993",
+          "file": "e2e/templates.spec.ts",
+          "line": 4,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "e2e\\upload.spec.ts",
+      "file": "e2e/upload.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "upload controls present",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "laptop",
+              "projectName": "laptop",
+              "results": [
+                {
+                  "workerIndex": 5,
+                  "parallelIndex": 5,
+                  "status": "passed",
+                  "duration": 16868,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:47:08.406Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "60cbdc55cb251b2a04bf-109821eee04231bd72a8",
+          "file": "e2e/upload.spec.ts",
+          "line": 4,
+          "column": 1
+        },
+        {
+          "title": "upload controls present",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "tablet",
+              "projectName": "tablet",
+              "results": [
+                {
+                  "workerIndex": 8,
+                  "parallelIndex": 2,
+                  "status": "passed",
+                  "duration": 19165,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:48:04.250Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "60cbdc55cb251b2a04bf-81d7972a72f6d27c4603",
+          "file": "e2e/upload.spec.ts",
+          "line": 4,
+          "column": 1
+        },
+        {
+          "title": "upload controls present",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone",
+              "projectName": "iphone",
+              "results": [
+                {
+                  "workerIndex": 15,
+                  "parallelIndex": 4,
+                  "status": "passed",
+                  "duration": 16301,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:49:08.474Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "60cbdc55cb251b2a04bf-fb2026512f85eea7ed3f",
+          "file": "e2e/upload.spec.ts",
+          "line": 4,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "e2e\\webllm.spec.ts",
+      "file": "e2e/webllm.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "webllm model catalog reachable",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "laptop",
+              "projectName": "laptop",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 17030,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:47:07.864Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bb733b9508e4f019a024-bfe88a381ac49738790c",
+          "file": "e2e/webllm.spec.ts",
+          "line": 4,
+          "column": 1
+        },
+        {
+          "title": "webllm model catalog reachable",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "tablet",
+              "projectName": "tablet",
+              "results": [
+                {
+                  "workerIndex": 13,
+                  "parallelIndex": 6,
+                  "status": "passed",
+                  "duration": 16194,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:48:06.953Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bb733b9508e4f019a024-d44b9dadd1191abdac17",
+          "file": "e2e/webllm.spec.ts",
+          "line": 4,
+          "column": 1
+        },
+        {
+          "title": "webllm model catalog reachable",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone",
+              "projectName": "iphone",
+              "results": [
+                {
+                  "workerIndex": 18,
+                  "parallelIndex": 5,
+                  "status": "passed",
+                  "duration": 17232,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-16T14:49:08.807Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bb733b9508e4f019a024-09262412c8412befe319",
+          "file": "e2e/webllm.spec.ts",
+          "line": 4,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "lighthouse.spec.ts",
+      "file": "lighthouse.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "lighthouse audits",
+          "file": "lighthouse.spec.ts",
+          "line": 10,
+          "column": 6,
+          "specs": [
+            {
+              "title": "runs lighthouse for login",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "Run CLI lighthouse script for reliable cross-platform reports",
+                      "location": {
+                        "file": "C:\\Dev\\zed-notetaker\\qp-notes\\tests\\lighthouse.spec.ts",
+                        "line": 17,
+                        "column": 12
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "laptop",
+                  "projectName": "laptop",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "skipped",
+                      "duration": 11724,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:47:12.042Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "description": "Run CLI lighthouse script for reliable cross-platform reports",
+                          "location": {
+                            "file": "C:\\Dev\\zed-notetaker\\qp-notes\\tests\\lighthouse.spec.ts",
+                            "line": 17,
+                            "column": 12
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "cf859ece42b60ea1c522-510b68134d538523d6a1",
+              "file": "lighthouse.spec.ts",
+              "line": 12,
+              "column": 5
+            },
+            {
+              "title": "runs lighthouse for main",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "Run CLI lighthouse script for reliable cross-platform reports",
+                      "location": {
+                        "file": "C:\\Dev\\zed-notetaker\\qp-notes\\tests\\lighthouse.spec.ts",
+                        "line": 17,
+                        "column": 12
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "laptop",
+                  "projectName": "laptop",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "skipped",
+                      "duration": 4188,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:47:23.966Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "description": "Run CLI lighthouse script for reliable cross-platform reports",
+                          "location": {
+                            "file": "C:\\Dev\\zed-notetaker\\qp-notes\\tests\\lighthouse.spec.ts",
+                            "line": 17,
+                            "column": 12
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "cf859ece42b60ea1c522-611db22ff46fec29c149",
+              "file": "lighthouse.spec.ts",
+              "line": 12,
+              "column": 5
+            },
+            {
+              "title": "runs lighthouse for settings",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "Run CLI lighthouse script for reliable cross-platform reports",
+                      "location": {
+                        "file": "C:\\Dev\\zed-notetaker\\qp-notes\\tests\\lighthouse.spec.ts",
+                        "line": 17,
+                        "column": 12
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "laptop",
+                  "projectName": "laptop",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "skipped",
+                      "duration": 3866,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:47:28.202Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "description": "Run CLI lighthouse script for reliable cross-platform reports",
+                          "location": {
+                            "file": "C:\\Dev\\zed-notetaker\\qp-notes\\tests\\lighthouse.spec.ts",
+                            "line": 17,
+                            "column": 12
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "cf859ece42b60ea1c522-d17a8b68a3bc5387068e",
+              "file": "lighthouse.spec.ts",
+              "line": 12,
+              "column": 5
+            },
+            {
+              "title": "runs lighthouse for login",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "Lighthouse is executed on laptop profile only",
+                      "location": {
+                        "file": "C:\\Dev\\zed-notetaker\\qp-notes\\tests\\lighthouse.spec.ts",
+                        "line": 14,
+                        "column": 12
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "tablet",
+                  "projectName": "tablet",
+                  "results": [
+                    {
+                      "workerIndex": 11,
+                      "parallelIndex": 1,
+                      "status": "skipped",
+                      "duration": 2658,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:48:12.408Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "description": "Lighthouse is executed on laptop profile only",
+                          "location": {
+                            "file": "C:\\Dev\\zed-notetaker\\qp-notes\\tests\\lighthouse.spec.ts",
+                            "line": 14,
+                            "column": 12
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "cf859ece42b60ea1c522-5d0f4d840e474f37c144",
+              "file": "lighthouse.spec.ts",
+              "line": 12,
+              "column": 5
+            },
+            {
+              "title": "runs lighthouse for main",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "Lighthouse is executed on laptop profile only",
+                      "location": {
+                        "file": "C:\\Dev\\zed-notetaker\\qp-notes\\tests\\lighthouse.spec.ts",
+                        "line": 14,
+                        "column": 12
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "tablet",
+                  "projectName": "tablet",
+                  "results": [
+                    {
+                      "workerIndex": 11,
+                      "parallelIndex": 1,
+                      "status": "skipped",
+                      "duration": 3409,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:48:15.139Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "description": "Lighthouse is executed on laptop profile only",
+                          "location": {
+                            "file": "C:\\Dev\\zed-notetaker\\qp-notes\\tests\\lighthouse.spec.ts",
+                            "line": 14,
+                            "column": 12
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "cf859ece42b60ea1c522-7329053dd817dd774e8e",
+              "file": "lighthouse.spec.ts",
+              "line": 12,
+              "column": 5
+            },
+            {
+              "title": "runs lighthouse for settings",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "Lighthouse is executed on laptop profile only",
+                      "location": {
+                        "file": "C:\\Dev\\zed-notetaker\\qp-notes\\tests\\lighthouse.spec.ts",
+                        "line": 14,
+                        "column": 12
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "tablet",
+                  "projectName": "tablet",
+                  "results": [
+                    {
+                      "workerIndex": 11,
+                      "parallelIndex": 1,
+                      "status": "skipped",
+                      "duration": 3168,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:48:18.647Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "description": "Lighthouse is executed on laptop profile only",
+                          "location": {
+                            "file": "C:\\Dev\\zed-notetaker\\qp-notes\\tests\\lighthouse.spec.ts",
+                            "line": 14,
+                            "column": 12
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "cf859ece42b60ea1c522-552759aefb143d7b8a0c",
+              "file": "lighthouse.spec.ts",
+              "line": 12,
+              "column": 5
+            },
+            {
+              "title": "runs lighthouse for login",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "Lighthouse is executed on laptop profile only",
+                      "location": {
+                        "file": "C:\\Dev\\zed-notetaker\\qp-notes\\tests\\lighthouse.spec.ts",
+                        "line": 14,
+                        "column": 12
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "iphone",
+                  "projectName": "iphone",
+                  "results": [
+                    {
+                      "workerIndex": 19,
+                      "parallelIndex": 0,
+                      "status": "skipped",
+                      "duration": 3048,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:49:09.177Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "description": "Lighthouse is executed on laptop profile only",
+                          "location": {
+                            "file": "C:\\Dev\\zed-notetaker\\qp-notes\\tests\\lighthouse.spec.ts",
+                            "line": 14,
+                            "column": 12
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "cf859ece42b60ea1c522-b19e4025b3d9c18d5d49",
+              "file": "lighthouse.spec.ts",
+              "line": 12,
+              "column": 5
+            },
+            {
+              "title": "runs lighthouse for main",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "Lighthouse is executed on laptop profile only",
+                      "location": {
+                        "file": "C:\\Dev\\zed-notetaker\\qp-notes\\tests\\lighthouse.spec.ts",
+                        "line": 14,
+                        "column": 12
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "iphone",
+                  "projectName": "iphone",
+                  "results": [
+                    {
+                      "workerIndex": 19,
+                      "parallelIndex": 0,
+                      "status": "skipped",
+                      "duration": 2572,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:49:12.297Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "description": "Lighthouse is executed on laptop profile only",
+                          "location": {
+                            "file": "C:\\Dev\\zed-notetaker\\qp-notes\\tests\\lighthouse.spec.ts",
+                            "line": 14,
+                            "column": 12
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "cf859ece42b60ea1c522-285c6d13c17afec17d29",
+              "file": "lighthouse.spec.ts",
+              "line": 12,
+              "column": 5
+            },
+            {
+              "title": "runs lighthouse for settings",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "Lighthouse is executed on laptop profile only",
+                      "location": {
+                        "file": "C:\\Dev\\zed-notetaker\\qp-notes\\tests\\lighthouse.spec.ts",
+                        "line": 14,
+                        "column": 12
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "iphone",
+                  "projectName": "iphone",
+                  "results": [
+                    {
+                      "workerIndex": 19,
+                      "parallelIndex": 0,
+                      "status": "skipped",
+                      "duration": 3469,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:49:14.928Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "description": "Lighthouse is executed on laptop profile only",
+                          "location": {
+                            "file": "C:\\Dev\\zed-notetaker\\qp-notes\\tests\\lighthouse.spec.ts",
+                            "line": 14,
+                            "column": 12
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "cf859ece42b60ea1c522-79c94b9cce3d7a1dc1c7",
+              "file": "lighthouse.spec.ts",
+              "line": 12,
+              "column": 5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "visual-regression.spec.ts",
+      "file": "visual-regression.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "visual regression",
+          "file": "visual-regression.spec.ts",
+          "line": 78,
+          "column": 6,
+          "specs": [
+            {
+              "title": "captures login-screen",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "laptop",
+                  "projectName": "laptop",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 7,
+                      "status": "passed",
+                      "duration": 9981,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:47:15.195Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-d74a423761faf7de17b9",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures app-root",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "laptop",
+                  "projectName": "laptop",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 7,
+                      "status": "passed",
+                      "duration": 5097,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:47:28.054Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-c7a248f2d0df7955c64c",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures shell-ready",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "laptop",
+                  "projectName": "laptop",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 7,
+                      "status": "passed",
+                      "duration": 9352,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:47:33.214Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-2599963a6f99ee7d3747",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures editor-ready",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "laptop",
+                  "projectName": "laptop",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 7,
+                      "status": "passed",
+                      "duration": 12761,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:47:42.633Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-40df360595f7753b9921",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures editor-split",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "laptop",
+                  "projectName": "laptop",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 7,
+                      "status": "passed",
+                      "duration": 20276,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:47:55.458Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-1e1cb035f65a3ab3bf83",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures editor-preview",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "laptop",
+                  "projectName": "laptop",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 7,
+                      "status": "passed",
+                      "duration": 8514,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:48:15.797Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-cfadab32d85db4b7c82e",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures settings-modal",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "laptop",
+                  "projectName": "laptop",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 7,
+                      "status": "passed",
+                      "duration": 6473,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:48:25.010Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-d45f1a3f1b81e96bd90a",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures command-palette",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "laptop",
+                  "projectName": "laptop",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 7,
+                      "status": "passed",
+                      "duration": 12164,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:48:31.535Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-0dad13f2079a459c41fd",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures templates-modal",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "laptop",
+                  "projectName": "laptop",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 7,
+                      "status": "passed",
+                      "duration": 16296,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:48:43.758Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-2314bf4480e45fb05741",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures history-modal",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "laptop",
+                  "projectName": "laptop",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 7,
+                      "status": "passed",
+                      "duration": 15702,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:49:00.584Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-f6c06421fcf9950ef041",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures ai-panel",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "laptop",
+                  "projectName": "laptop",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 7,
+                      "status": "passed",
+                      "duration": 16822,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:49:16.360Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-7fd50f1393bd358ccb08",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures model-catalog",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "laptop",
+                  "projectName": "laptop",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 7,
+                      "status": "passed",
+                      "duration": 7078,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:49:33.270Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-6a4138d268addc3b64eb",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures notes-tree",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "laptop",
+                  "projectName": "laptop",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 7,
+                      "status": "passed",
+                      "duration": 6360,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:49:40.469Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-0491137b705e1cb8aab3",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures status-bar",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "laptop",
+                  "projectName": "laptop",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 7,
+                      "status": "passed",
+                      "duration": 7399,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:49:46.948Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-1657fc6eb0f0c737a413",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures login-screen",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "tablet",
+                  "projectName": "tablet",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 12215,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:48:13.594Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-d4b98d6d6a821753098c",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures app-root",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "tablet",
+                  "projectName": "tablet",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 6338,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:48:26.668Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-d88d907014cb936dd786",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures shell-ready",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "tablet",
+                  "projectName": "tablet",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 14070,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:48:33.063Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-b5bf8e6ffadbfec63567",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures editor-ready",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "tablet",
+                  "projectName": "tablet",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 14751,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:48:47.194Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-5dc1c31f395677c4f94d",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures editor-split",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "tablet",
+                  "projectName": "tablet",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 22505,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:49:02.034Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-91822ae07e98fa62e2b8",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures editor-preview",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "tablet",
+                  "projectName": "tablet",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 9088,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:49:24.608Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-4fc1623d16afb2d1d515",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures settings-modal",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "tablet",
+                  "projectName": "tablet",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 10382,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:49:33.878Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-e8e7653f80d970270920",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures command-palette",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "tablet",
+                  "projectName": "tablet",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 9393,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:49:44.369Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-ea7fd7b75aabdd501a7a",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures templates-modal",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "tablet",
+                  "projectName": "tablet",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 7418,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:49:53.823Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-ef7561fe34316d48c67d",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures history-modal",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "tablet",
+                  "projectName": "tablet",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 7415,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:50:01.341Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-5e9c580930b53328bdfc",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures ai-panel",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "tablet",
+                  "projectName": "tablet",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 6245,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:50:08.809Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-014f62c99facda3aca30",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures model-catalog",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "tablet",
+                  "projectName": "tablet",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 7127,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:50:15.098Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-dceac6d22cc7290d5fc3",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures notes-tree",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "tablet",
+                  "projectName": "tablet",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 6227,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:50:22.276Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-edf12a0a1e452b1d3b3c",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures status-bar",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "tablet",
+                  "projectName": "tablet",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 5768,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:50:28.558Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-ab221d5c4dffd66b5276",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures login-screen",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "iphone",
+                  "projectName": "iphone",
+                  "results": [
+                    {
+                      "workerIndex": 20,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 17821,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:49:13.058Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-376c0af26a0a40cb9e2c",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures app-root",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "iphone",
+                  "projectName": "iphone",
+                  "results": [
+                    {
+                      "workerIndex": 20,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 6673,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:49:31.090Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-2477bd4e081369d0a95a",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures shell-ready",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "iphone",
+                  "projectName": "iphone",
+                  "results": [
+                    {
+                      "workerIndex": 20,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 7149,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:49:37.825Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-72cda57f02c6bd2e044f",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures editor-ready",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "iphone",
+                  "projectName": "iphone",
+                  "results": [
+                    {
+                      "workerIndex": 20,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 7652,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:49:45.038Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-9ddf854c37951e28e180",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures editor-split",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "iphone",
+                  "projectName": "iphone",
+                  "results": [
+                    {
+                      "workerIndex": 20,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 6308,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:49:52.760Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-27094a8f85c94eaa7174",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures editor-preview",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "iphone",
+                  "projectName": "iphone",
+                  "results": [
+                    {
+                      "workerIndex": 20,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 5719,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:49:59.129Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-31f5ecf8092b5f18f9d4",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures settings-modal",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "iphone",
+                  "projectName": "iphone",
+                  "results": [
+                    {
+                      "workerIndex": 20,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 6264,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:50:04.905Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-f0f7430b58bae3c907c4",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures command-palette",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "iphone",
+                  "projectName": "iphone",
+                  "results": [
+                    {
+                      "workerIndex": 20,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 5660,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:50:11.228Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-41359622af22cb8e6259",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures templates-modal",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "iphone",
+                  "projectName": "iphone",
+                  "results": [
+                    {
+                      "workerIndex": 20,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 5985,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:50:16.953Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-3ff97df7df2b1c788291",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures history-modal",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "iphone",
+                  "projectName": "iphone",
+                  "results": [
+                    {
+                      "workerIndex": 20,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 6988,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:50:22.995Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-6c1a2edd7be736108cbd",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures ai-panel",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "iphone",
+                  "projectName": "iphone",
+                  "results": [
+                    {
+                      "workerIndex": 20,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 5805,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:50:30.044Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-0d1b1675f559f697b91b",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures model-catalog",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "iphone",
+                  "projectName": "iphone",
+                  "results": [
+                    {
+                      "workerIndex": 20,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 6435,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:50:35.900Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-7ca51b013a7c223984cf",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures notes-tree",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "iphone",
+                  "projectName": "iphone",
+                  "results": [
+                    {
+                      "workerIndex": 20,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 4290,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:50:42.379Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-a850e410ba9553d5229f",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            },
+            {
+              "title": "captures status-bar",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "iphone",
+                  "projectName": "iphone",
+                  "results": [
+                    {
+                      "workerIndex": 20,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 4331,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-16T14:50:46.730Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-05e8c2a968afe721252f",
+              "file": "visual-regression.spec.ts",
+              "line": 85,
+              "column": 5
+            }
+          ]
+        }
+      ]
     }
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-04-16T10:46:23.585Z",
-    "duration": 17058.632,
-    "expected": 6,
-    "skipped": 0,
+    "startTime": "2026-04-16T14:46:36.023Z",
+    "duration": 255630.824,
+    "expected": 93,
+    "skipped": 9,
     "unexpected": 0,
     "flaky": 0
   }
