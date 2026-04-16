@@ -77,7 +77,6 @@ let workspacePanelHidden = false;
 let noteDetailsPanelHidden = false;
 let focusModeEnabled = false;
 type AIPanelMode = 'assist' | 'transform';
-let aiPanelMode: AIPanelMode = 'assist';
 let selectedSyncProviderType: 'gdrive' | 'onedrive' | 'dropbox' = 'gdrive';
 type SettingsTabId = 'general' | 'sync' | 'ai' | 'security' | 'shortcuts' | 'accessibility';
 let activeSettingsTab: SettingsTabId = 'general';
@@ -169,7 +168,7 @@ function scheduleSearchIndexBuild(): void {
   if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
     (window as Window & { requestIdleCallback: (cb: IdleRequestCallback) => number }).requestIdleCallback(() => run());
   } else {
-    window.setTimeout(run, 500);
+    globalThis.setTimeout(run, 500);
   }
 }
 
@@ -699,7 +698,6 @@ function loadCollapsedExplorerSections(): void {
 }
 
 function setAIPanelMode(mode: AIPanelMode): void {
-  aiPanelMode = mode;
   const panel = document.getElementById('aiPanel');
   panel?.setAttribute('data-ai-mode', mode);
   const input = document.getElementById('aiInput') as HTMLTextAreaElement | null;
@@ -2762,7 +2760,7 @@ async function init(): Promise<void> {
   window.addEventListener('offline', updateOnlineStatus);
 
   // ─── Settings modal ───
-  document.getElementById('btnSettings')?.addEventListener('click', openSettings);
+  document.getElementById('btnSettings')?.addEventListener('click', () => openSettings());
   document.getElementById('btnCloseSettings')?.addEventListener('click', closeSettings);
   document.getElementById('settingsOverlay')?.addEventListener('click', (e: Event) => {
     if ((e.target as HTMLElement).id === 'settingsOverlay') closeSettings();
