@@ -77,6 +77,14 @@ let workspacePanelHidden = false;
 let noteDetailsPanelHidden = false;
 let focusModeEnabled = false;
 type AIPanelMode = 'assist' | 'transform';
+type DeviceLayoutProfile = 'desktop' | 'tablet' | 'mobile';
+type LayoutPrefs = {
+  workspacePanelHidden: boolean;
+  noteDetailsPanelHidden: boolean;
+  focusModeEnabled: boolean;
+  viewMode: 'edit' | 'preview' | 'split';
+  aiMode: AIPanelMode;
+};
 let selectedSyncProviderType: 'gdrive' | 'onedrive' | 'dropbox' = 'gdrive';
 type SettingsTabId = 'general' | 'sync' | 'ai' | 'security' | 'shortcuts' | 'accessibility';
 let activeSettingsTab: SettingsTabId = 'general';
@@ -114,6 +122,7 @@ const DEFAULT_MARKDOWN_PROMPT_TEMPLATE = 'Title: {{title}}\n\nCurrent markdown (
 type SyncProviderType = 'gdrive' | 'onedrive' | 'dropbox';
 const NOTE_DRAG_MIME = 'application/x-zed-note-ids';
 const EXPLORER_COLLAPSED_KEY = 'explorerCollapsedSections';
+const COMMAND_PALETTE_RECENTS_KEY = 'commandPaletteRecents';
 
 const SYNC_PROVIDER_SETUP: Record<SyncProviderType, {
   label: string;
@@ -141,6 +150,46 @@ const MANAGED_SYNC_CLIENT_IDS: Record<SyncProviderType, string> = {
 
 function getManagedSyncClientId(type: SyncProviderType): string {
   return MANAGED_SYNC_CLIENT_IDS[type] || '';
+}
+
+function getLayoutProfile(): DeviceLayoutProfile {
+  const width = window.innerWidth;
+  if (width <= 768) return 'mobile';
+  if (width <= 1100) return 'tablet';
+  return 'desktop';
+}
+
+function layoutPrefsStorageKey(): string {
+  return `layoutPrefs:${getLayoutProfile()}`;
+}
+
+function persistLayoutPrefs(): void {
+  const payload: LayoutPrefs = {
+    workspacePanelHidden,
+    noteDetailsPanelHidden,
+    focusModeEnabled,
+    viewMode,
+    aiMode: (document.getElementById('aiPanel')?.getAttribute('data-ai-mode') as AIPanelMode | null) ?? 'assist',
+  };
+  localStorage.setItem(layoutPrefsStorageKey(), JSON.stringify(payload));
+}
+
+function loadLayoutPrefs(): LayoutPrefs | null {
+  const raw = localStorage.getItem(layoutPrefsStorageKey());
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as Partial<LayoutPrefs>;
+    if (!parsed || typeof parsed !== 'object') return null;
+    return {
+      workspacePanelHidden: Boolean(parsed.workspacePanelHidden),
+      noteDetailsPanelHidden: Boolean(parsed.noteDetailsPanelHidden),
+      focusModeEnabled: Boolean(parsed.focusModeEnabled),
+      viewMode: parsed.viewMode === 'edit' || parsed.viewMode === 'preview' ? parsed.viewMode : 'split',
+      aiMode: parsed.aiMode === 'transform' ? 'transform' : 'assist',
+    };
+  } catch {
+    return null;
+  }
 }
 
 async function rebuildSearchIndex(): Promise<void> {
@@ -626,6 +675,7 @@ function setWorkspacePanelHidden(hidden: boolean): void {
       : `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m10 3-5 5 5 5"/></svg>`;
   }
   syncPanelToggleButtons();
+  persistLayoutPrefs();
 }
 
 function setNoteDetailsPanelHidden(hidden: boolean): void {
@@ -633,6 +683,7 @@ function setNoteDetailsPanelHidden(hidden: boolean): void {
   const app = document.getElementById('app');
   app?.classList.toggle('note-details-hidden', hidden);
   syncPanelToggleButtons();
+  persistLayoutPrefs();
 }
 
 function syncPanelToggleButtons(): void {
@@ -676,6 +727,8 @@ function setFocusModeEnabled(enabled: boolean): void {
   app?.classList.toggle('focus-mode', enabled);
   localStorage.setItem('focusModeEnabled', String(enabled));
   syncPanelToggleButtons();
+  announce(enabled ? 'Focus mode enabled' : 'Focus mode disabled');
+  persistLayoutPrefs();
 }
 
 function persistCollapsedExplorerSections(): void {
@@ -715,6 +768,8 @@ function setAIPanelMode(mode: AIPanelMode): void {
       ? 'Ask about your note, attach context, or start conversation…'
       : 'Transform this note (summarize, rewrite, expand, grammar, explain)…';
   }
+  announce(`AI mode switched to ${mode}`);
+  persistLayoutPrefs();
 }
 
 function syncAIMobileModeUI(): void {
@@ -1187,6 +1242,10 @@ function setAIProgressState(text?: string, progress?: number): void {
   progressText.textContent = '';
 }
 
+function renderSurfaceState(target: HTMLElement, kind: 'loading' | 'empty' | 'error' | 'info', message: string): void {
+  target.innerHTML = `<p class="ui-surface-state ui-surface-state-${kind}">${escapeHtml(message)}</p>`;
+}
+
 async function getLLMModules(): Promise<{
   engineModule: LLMEngineModule;
   dispatchModule: LLMDispatchModule;
@@ -1486,6 +1545,7 @@ function renderApp(): void {
         </span>
         <input type="text" id="searchInput" placeholder="Search notes... (tag:, date:)" autocomplete="off" />
       </div>
+        <input type="text" id="quickCaptureInput" class="quick-capture-input" placeholder="Quick capture... (Enter to save)" autocomplete="off" />
       <div class="topbar-actions">
         <button class="btn btn-primary btn-sm" id="btnNewNote">
           <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2" fill="none"/></svg>
@@ -1877,8 +1937,8 @@ function renderApp(): void {
         <span class="sync-state-chip synced" id="syncStateChip"><span class="sync-state-chip-dot"></span><span id="syncStateChipText">Synced</span></span>
         <div class="statusbar-secondary" id="statusbarSecondary">
           <span id="syncStatus" class="sync-status-detail">All changes up to date</span>
-          <span id="wordCount"></span>
-          <span class="perf-indicator"><span class="perf-dot" id="perfDot"></span><span id="perfLabel">OK</span></span>
+          <button class="btn btn-ghost btn-sm status-pill-btn" id="btnWordCountDetails" title="Open writing details"><span id="wordCount"></span></button>
+          <button class="btn btn-ghost btn-sm status-pill-btn perf-indicator" id="btnPerfDetails" title="Open performance details"><span class="perf-dot" id="perfDot"></span><span id="perfLabel">OK</span></button>
           <span id="cursorPos">Ln 1, Col 1</span>
           <span>Zed Note v1.0.0</span>
         </div>
@@ -2286,17 +2346,14 @@ function renderApp(): void {
     <!-- Onboarding Overlay -->
     <div class="onboarding-overlay" id="onboardingOverlay" style="display:none;">
       <div class="onboarding-card">
-        <h2 style="margin:0 0 8px;">Welcome to Zed Note 🎉</h2>
-        <p style="color:var(--text2);font-size:13px;margin:0 0 16px;">A powerful, private note-taking app that runs entirely in your browser.</p>
-        <div class="onboarding-steps">
-          <div class="onboarding-step"><strong>Write</strong> — Rich Markdown editor with live preview</div>
-          <div class="onboarding-step"><strong>AI</strong> — In-browser LLM or connect OpenAI, Anthropic, Gemini</div>
-          <div class="onboarding-step"><strong>Sync</strong> — Google Drive, OneDrive, or Dropbox</div>
-          <div class="onboarding-step"><strong>Upload</strong> — Extract text from PDFs, DOCX, images (OCR)</div>
-          <div class="onboarding-step"><strong>Dictate</strong> — Speech-to-text in 20+ languages</div>
-          <div class="onboarding-step"><strong>Global</strong> — Available in 20 languages with RTL support</div>
+        <h2 id="onboardingTitle" style="margin:0 0 8px;">Welcome to Zed Note 🎉</h2>
+        <p id="onboardingText" style="color:var(--text2);font-size:13px;margin:0 0 16px;">A powerful, private note-taking app that runs entirely in your browser.</p>
+        <div class="onboarding-steps" id="onboardingSteps"></div>
+        <div class="onboarding-actions">
+          <button class="btn btn-ghost" id="btnOnboardingBack" type="button">Back</button>
+          <button class="btn btn-primary" id="btnOnboardingNext" type="button">Next</button>
+          <button class="btn btn-ghost" id="btnOnboardingDismiss" type="button">Skip</button>
         </div>
-        <button class="btn btn-primary" id="btnOnboardingDismiss" style="margin-top:16px;width:100%;">Get Started</button>
       </div>
     </div>
 
@@ -2426,6 +2483,33 @@ async function init(): Promise<void> {
       setAIPanelMode(mode);
     });
   });
+  document.getElementById('btnWordCountDetails')?.addEventListener('click', () => {
+    void refreshFileList(currentListFilter, currentSearchQuery);
+    setStatus('Updated writing statistics.');
+  });
+  document.getElementById('btnPerfDetails')?.addEventListener('click', () => {
+    openSettings('general');
+  });
+  document.getElementById('quickCaptureInput')?.addEventListener('keydown', async (e: Event) => {
+    const event = e as KeyboardEvent;
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    const input = event.target as HTMLInputElement;
+    const text = input.value.trim();
+    if (!text) return;
+    await createNewNote();
+    if (currentNote?.id) {
+      currentNote.title = text.length > 64 ? `${text.slice(0, 61)}...` : text;
+      await saveCurrentNote(true);
+      if (editor) replaceContent(editor, text);
+      await saveCurrentNote(true);
+      setStatus('Quick capture saved.');
+      announce('Quick capture note created.');
+    }
+    input.value = '';
+  });
+
+  loadRecentCommands();
 
   // Load notes & render file list
   await refreshFileList();
@@ -2434,8 +2518,12 @@ async function init(): Promise<void> {
   scheduleSearchIndexBuild();
 
   const savedFocusMode = localStorage.getItem('focusModeEnabled') === 'true';
-  setFocusModeEnabled(savedFocusMode);
-  setAIPanelMode('assist');
+  const layoutPrefs = loadLayoutPrefs();
+  setFocusModeEnabled(layoutPrefs?.focusModeEnabled ?? savedFocusMode);
+  setWorkspacePanelHidden(layoutPrefs?.workspacePanelHidden ?? false);
+  setNoteDetailsPanelHidden(layoutPrefs?.noteDetailsPanelHidden ?? true);
+  setViewMode(layoutPrefs?.viewMode ?? 'split');
+  setAIPanelMode(layoutPrefs?.aiMode ?? 'assist');
 
   // Load folders
   await refreshFolders();
@@ -3437,11 +3525,47 @@ async function init(): Promise<void> {
   });
 
   // ─── Onboarding (first run) ───
+  const onboardingSteps = [
+    { title: 'Welcome to Zed Note', text: 'Capture ideas quickly, then shape them into structured notes.', bullets: ['Create notes fast', 'Split writing and preview', 'Use quick capture from top bar'] },
+    { title: 'AI Workflows', text: 'Switch between Assist and Transform modes depending on your task.', bullets: ['Assist mode for chat and context', 'Transform mode for rewrite/summarize tasks'] },
+    { title: 'Sync and Accessibility', text: 'Keep notes available everywhere with cloud sync and keyboard-first controls.', bullets: ['Google Drive / OneDrive / Dropbox', 'Command palette and focus mode'] },
+  ] as const;
   const onboarded = await getSetting('onboarded');
   if (!onboarded) {
-    document.getElementById('onboardingOverlay')!.style.display = 'flex';
-    document.getElementById('btnOnboardingDismiss')?.addEventListener('click', async () => {
-      document.getElementById('onboardingOverlay')!.style.display = 'none';
+    const overlay = document.getElementById('onboardingOverlay');
+    const titleEl = document.getElementById('onboardingTitle');
+    const textEl = document.getElementById('onboardingText');
+    const stepsEl = document.getElementById('onboardingSteps');
+    const btnBack = document.getElementById('btnOnboardingBack') as HTMLButtonElement | null;
+    const btnNext = document.getElementById('btnOnboardingNext') as HTMLButtonElement | null;
+    const btnDismiss = document.getElementById('btnOnboardingDismiss');
+    let idx = 0;
+    const renderStep = () => {
+      const step = onboardingSteps[idx];
+      if (!step || !titleEl || !textEl || !stepsEl || !btnBack || !btnNext) return;
+      titleEl.textContent = step.title;
+      textEl.textContent = step.text;
+      stepsEl.innerHTML = step.bullets.map((b, i) => `<div class="onboarding-step"><span class="onboarding-step-num">${i + 1}</span><span>${escapeHtml(b)}</span></div>`).join('');
+      btnBack.disabled = idx === 0;
+      btnNext.textContent = idx === onboardingSteps.length - 1 ? 'Finish' : 'Next';
+    };
+    if (overlay) overlay.style.display = 'flex';
+    renderStep();
+    btnBack?.addEventListener('click', () => {
+      idx = Math.max(0, idx - 1);
+      renderStep();
+    });
+    btnNext?.addEventListener('click', async () => {
+      if (idx >= onboardingSteps.length - 1) {
+        if (overlay) overlay.style.display = 'none';
+        await setSetting('onboarded', 'true');
+        return;
+      }
+      idx += 1;
+      renderStep();
+    });
+    btnDismiss?.addEventListener('click', async () => {
+      if (overlay) overlay.style.display = 'none';
       await setSetting('onboarded', 'true');
     });
   }
@@ -4265,6 +4389,8 @@ function setViewMode(mode: 'edit' | 'preview' | 'split'): void {
       content.classList.add('split');
       break;
   }
+  announce(`View mode set to ${mode}`);
+  persistLayoutPrefs();
 }
 
 function buildFallbackActionPills(raw: string): string[] {
@@ -5194,11 +5320,31 @@ type CommandPaletteItem = {
   id: string;
   label: string;
   keywords: string;
+  aliases?: string[];
   disabled?: boolean;
   run: () => Promise<void> | void;
 };
 
 let commandPaletteFocusRelease: (() => void) | null = null;
+let recentCommandIds: string[] = [];
+
+function loadRecentCommands(): void {
+  const raw = localStorage.getItem(COMMAND_PALETTE_RECENTS_KEY);
+  if (!raw) return;
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      recentCommandIds = parsed.filter((id): id is string => typeof id === 'string').slice(0, 8);
+    }
+  } catch {
+    recentCommandIds = [];
+  }
+}
+
+function rememberRecentCommand(commandId: string): void {
+  recentCommandIds = [commandId, ...recentCommandIds.filter((id) => id !== commandId)].slice(0, 8);
+  localStorage.setItem(COMMAND_PALETTE_RECENTS_KEY, JSON.stringify(recentCommandIds));
+}
 
 function closeCommandPalette(): void {
   const overlay = document.getElementById('commandPaletteOverlay');
@@ -5226,12 +5372,14 @@ function getCommandPaletteItems(): CommandPaletteItem[] {
       id: 'new-note',
       label: 'Create New Note',
       keywords: 'create add note',
+      aliases: ['new', 'note'],
       run: async () => { await createNewNote(); },
     },
     {
       id: 'open-settings',
       label: 'Open Settings',
       keywords: 'preferences configuration settings',
+      aliases: ['settings', 'preferences'],
       run: () => openSettings(),
     },
     {
@@ -5250,6 +5398,7 @@ function getCommandPaletteItems(): CommandPaletteItem[] {
       id: 'toggle-ai',
       label: 'Toggle AI Panel',
       keywords: 'assistant ai panel',
+      aliases: ['ai', 'assistant'],
       run: () => toggleAIPanel(),
     },
     {
@@ -5381,13 +5530,27 @@ function renderCommandPaletteList(query: string): void {
   const list = document.getElementById('commandPaletteList');
   if (!list) return;
   const q = query.trim().toLowerCase();
-  const items = getCommandPaletteItems().filter((item) => {
-    if (!q) return true;
-    return item.label.toLowerCase().includes(q) || item.keywords.includes(q);
-  });
-  list.innerHTML = items.length === 0
+  const items = getCommandPaletteItems();
+  const scored = items.map((item) => {
+    if (!q) {
+      const recentIndex = recentCommandIds.indexOf(item.id);
+      return { item, score: recentIndex >= 0 ? 100 - recentIndex : 0 };
+    }
+    const label = item.label.toLowerCase();
+    const keywords = item.keywords.toLowerCase();
+    const aliasMatch = item.aliases?.some((alias) => alias.toLowerCase().includes(q)) ?? false;
+    let score = 0;
+    if (label.startsWith(q)) score += 80;
+    if (label.includes(q)) score += 40;
+    if (keywords.includes(q)) score += 25;
+    if (aliasMatch) score += 35;
+    const recentIndex = recentCommandIds.indexOf(item.id);
+    if (recentIndex >= 0) score += 10 - recentIndex;
+    return { item, score };
+  }).filter((entry) => entry.score > 0 || !q).sort((a, b) => b.score - a.score).map((entry) => entry.item);
+  list.innerHTML = scored.length === 0
     ? '<div class="command-palette-empty">No commands found</div>'
-    : items.map((item) => `
+    : scored.map((item) => `
         <button type="button" class="command-palette-item${item.disabled ? ' disabled' : ''}" data-command-id="${item.id}" ${item.disabled ? 'disabled' : ''}>
           <span>${escapeHtml(item.label)}</span>
         </button>
@@ -5398,6 +5561,7 @@ function renderCommandPaletteList(query: string): void {
       const commandId = btn.dataset.commandId;
       const item = getCommandPaletteItems().find((candidate) => candidate.id === commandId);
       if (!item || item.disabled) return;
+      if (commandId) rememberRecentCommand(commandId);
       closeCommandPalette();
       await item.run();
     });
@@ -5637,7 +5801,7 @@ async function openHistory(): Promise<void> {
   const historyDiff = document.getElementById('historyDiff')!;
 
   if (revisions.length === 0) {
-    historyList.innerHTML = '<p style="font-size:12px;color:var(--text3);">No history yet. Save the note to create revisions.</p>';
+    renderSurfaceState(historyList, 'empty', 'No history yet. Save the note to create revisions.');
     historyDiff.innerHTML = '';
     document.getElementById('historyOverlay')!.style.display = 'flex';
     return;
@@ -5813,7 +5977,7 @@ async function renderModelCatalog(): Promise<void> {
   const { engineModule } = await ensureLLMRuntime();
   const { detectWebGPU, llmEngine } = engineModule;
 
-  list.innerHTML = '<p style="font-size:12px;color:var(--text3);">Loading catalog…</p>';
+  renderSurfaceState(list, 'loading', 'Loading model catalog...');
 
   const gpu = await detectWebGPU();
   gpuEl.textContent = gpu.supported
@@ -5824,7 +5988,7 @@ async function renderModelCatalog(): Promise<void> {
   try {
     models = await llmEngine.getModelCatalog();
   } catch (error) {
-    list.innerHTML = '<p style="font-size:12px;color:var(--red);">Unable to load model catalog. Check network access and try again.</p>';
+    renderSurfaceState(list, 'error', 'Unable to load model catalog. Check network access and try again.');
     console.warn('Model catalog load failed:', error);
     return;
   }

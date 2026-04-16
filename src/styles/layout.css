@@ -178,6 +178,20 @@
 
 .search-wrap input::placeholder { color: var(--text3); }
 
+.quick-capture-input {
+  min-width: 200px;
+  max-width: 260px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  color: var(--text);
+  font-size: 12px;
+}
+
+.quick-capture-input::placeholder { color: var(--text3); }
+
 .search-icon {
   position: absolute;
   left: 14px;
@@ -1154,9 +1168,10 @@
   border: none;
   color: var(--text);
   font-family: var(--font);
-  font-size: 32px;
+  font-size: 30px;
   font-weight: 680;
-  letter-spacing: -0.028em;
+  letter-spacing: -0.022em;
+  line-height: 1.2;
   outline: none;
   padding: 10px 0 8px;
 }
@@ -1452,7 +1467,7 @@
   color: var(--text);
   font-family: var(--font-mono);
   font-size: 13px;
-  line-height: 1.65;
+  line-height: 1.7;
   padding: 16px 16px 12px;
 }
 
@@ -1909,6 +1924,11 @@
 .statusbar .shell-select-sm {
   font-size: 11px;
   min-height: 24px;
+}
+
+.status-pill-btn {
+  min-height: 24px;
+  padding: 2px 8px;
 }
 
 #btnPin.is-active {
@@ -3102,6 +3122,12 @@
   gap: 10px;
 }
 
+.onboarding-actions {
+  margin-top: 14px;
+  display: flex;
+  gap: 8px;
+}
+
 .onboarding-step {
   display: flex;
   gap: 10px;
@@ -3321,6 +3347,10 @@
     gap: 4px;
   }
 
+  .quick-capture-input {
+    display: none;
+  }
+
   .editor-tabs {
     gap: 0;
   }
@@ -3479,7 +3509,7 @@
   padding: 8px 12px;
   border-radius: 10px;
   font-size: 13px;
-  line-height: 1.55;
+  line-height: 1.6;
   max-width: 95%;
   word-wrap: break-word;
   overflow-wrap: break-word;
@@ -3489,6 +3519,26 @@
 .ai-msg p:last-child { margin: 0; }
 .ai-msg pre { margin: 4px 0; font-size: 12px; }
 .ai-msg code { font-size: 12px; }
+
+.ui-surface-state {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  font-size: 12px;
+  color: var(--text2);
+}
+
+.ui-surface-state-empty {
+  color: var(--text3);
+}
+
+.ui-surface-state-error {
+  color: var(--red);
+  border-color: var(--red-border);
+  background: var(--red-bg);
+}
 
 .ai-suggested-pills {
   display: flex;

@@ -94,5 +94,13 @@
 ### Sprint 2 (Deeper polish)
 - [x] Persist explorer section collapse state across sessions/devices.
 - [x] Add deterministic app-level AI model catalog mock mode for E2E/visual stability.
-- [ ] Continue semantic token migration for remaining ad-hoc color-mix branches.
+- [x] Continue semantic token migration for remaining ad-hoc color-mix branches.
 - [ ] Add CI quality gates by risk class (functional/a11y hard gate, visual/lighthouse trend gate).
+
+### Sprint 3 (Professional polish continuation)
+- [x] Add per-device layout memory (workspace/details/focus/view/AI mode) for better cross-form-factor continuity.
+- [x] Improve command palette relevance with alias matching and recent-command weighting.
+- [x] Add quick-capture input in topbar for low-friction capture flow.
+- [x] Convert onboarding from one-shot wall of text into step-based walkthrough.
+- [x] Make statusbar details actionable (writing/performance quick actions).
+- [x] Standardize empty/loading/error inline surfaces for catalog/history and similar panels.
