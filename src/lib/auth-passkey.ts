@@ -33,6 +33,13 @@ interface VerifyRegisterResponse {
   error?: string;
 }
 
+const PASSKEY_API_BASE = (import.meta.env.VITE_PASSKEY_API_BASE || '').trim().replace(/\/+$/, '');
+
+function passkeyApiUrl(path: string): string {
+  if (!PASSKEY_API_BASE) return path;
+  return `${PASSKEY_API_BASE}${path}`;
+}
+
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, {
     ...init,
@@ -66,7 +73,7 @@ export async function canUsePasskeySignIn(): Promise<boolean> {
 }
 
 export async function signInWithPasskeyFlow(): Promise<string> {
-  const optionsRes = await fetchJson<AuthOptionsResponse>('/api/passkey/auth/options', {
+  const optionsRes = await fetchJson<AuthOptionsResponse>(passkeyApiUrl('/api/passkey/auth/options'), {
     method: 'POST',
     body: JSON.stringify({}),
   });
@@ -76,7 +83,7 @@ export async function signInWithPasskeyFlow(): Promise<string> {
     useBrowserAutofill: true,
   });
 
-  const verifyRes = await fetchJson<VerifyAuthResponse>('/api/passkey/auth/verify', {
+  const verifyRes = await fetchJson<VerifyAuthResponse>(passkeyApiUrl('/api/passkey/auth/verify'), {
     method: 'POST',
     body: JSON.stringify({
       requestId: optionsRes.requestId,
@@ -102,7 +109,7 @@ async function getAuthHeader(): Promise<Record<string, string>> {
 export async function enrollCurrentUserPasskey(): Promise<void> {
   const headers = await getAuthHeader();
 
-  const optionsRes = await fetchJson<RegisterOptionsResponse>('/api/passkey/register/options', {
+  const optionsRes = await fetchJson<RegisterOptionsResponse>(passkeyApiUrl('/api/passkey/register/options'), {
     method: 'POST',
     headers,
     body: JSON.stringify({}),
@@ -112,7 +119,7 @@ export async function enrollCurrentUserPasskey(): Promise<void> {
     optionsJSON: optionsRes.options as any,
   });
 
-  const verifyRes = await fetchJson<VerifyRegisterResponse>('/api/passkey/register/verify', {
+  const verifyRes = await fetchJson<VerifyRegisterResponse>(passkeyApiUrl('/api/passkey/register/verify'), {
     method: 'POST',
     headers,
     body: JSON.stringify({
@@ -128,7 +135,7 @@ export async function enrollCurrentUserPasskey(): Promise<void> {
 
 export async function getPasskeyEnrollmentStatus(): Promise<{ enrolled: boolean }> {
   const headers = await getAuthHeader();
-  return fetchJson<{ enrolled: boolean }>('/api/passkey/register/status', {
+  return fetchJson<{ enrolled: boolean }>(passkeyApiUrl('/api/passkey/register/status'), {
     method: 'GET',
     headers,
   });

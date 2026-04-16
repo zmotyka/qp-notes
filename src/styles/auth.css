@@ -40,6 +40,12 @@
     linear-gradient(180deg, color-mix(in srgb, var(--bg) 84%, var(--bg2)), color-mix(in srgb, var(--bg-canvas) 88%, var(--bg)));
 }
 
+.auth-main {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
 .auth-toolbar {
   position: absolute;
   top: 0;

@@ -17,12 +17,6 @@ import {
   isOffline,
   type User,
 } from './lib/auth';
-import {
-  canUsePasskeySignIn,
-  enrollCurrentUserPasskey,
-  getPasskeyEnrollmentStatus,
-  signInWithPasskeyFlow,
-} from './lib/auth-passkey';
 import { initDb, getDb, db, getSetting, setSetting, type Note, type Folder } from './lib/db';
 import { loadThemeFromSettings, saveTheme, saveAccent, getTheme, getAccent, THEMES, ACCENTS, type ThemeName, type AccentColor } from './lib/theme';
 import { createEditor, wrapSelection, insertLinePrefix, insertAtCursor, replaceContent, getSelectedText, type EditorOptions } from './lib/editor';
@@ -30,9 +24,6 @@ import { renderMarkdown } from './lib/preview';
 import { initTips, TIPS, type Tip } from './lib/tips';
 import { buildSearchIndex, indexNote, removeFromIndex, searchNotes } from './lib/search';
 import { syncEngine, type SyncResult } from './lib/sync/sync-engine';
-import { GoogleDriveProvider } from './lib/sync/google-drive';
-import { OneDriveProvider } from './lib/sync/onedrive';
-import { DropboxProvider } from './lib/sync/dropbox';
 import {
   pushNote as pushFirestoreNote,
   deleteNote as deleteFirestoreNote,
@@ -41,13 +32,11 @@ import {
   type FirestoreNote,
 } from './lib/sync/firestore';
 import { saveRevision, getRevisions, deleteHistory, diffTexts, renderDiffHTML, type Revision } from './lib/history';
-import { exportToZip, downloadBlob, importFromZip, type ExportOptions } from './lib/backup';
+import type { ExportOptions } from './lib/backup';
 import type { LLMStatus } from './lib/llm/engine';
 import type { ChatMessage } from './lib/llm/provider';
 import { BUILTIN_PROMPTS, interpolate, getAllPrompts, savePrompt, deletePrompt, exportPrompts, importPrompts, type PromptContext } from './lib/prompts';
 import { getAllNoteTemplates, saveNoteTemplate, deleteNoteTemplate, renderNoteTemplate } from './lib/note-templates';
-import { extractFromFile, isSupportedFile, handleClipboardPaste, saveAttachment } from './lib/upload';
-import { isWebSpeechSupported, startWebSpeech, stopSpeech, getSpeechListening, SPEECH_LANGUAGES, isTtsSupported, speakText, stopTts, getTtsState } from './lib/speech';
 import { initI18n, setLanguage, getCurrentLanguage, LANGUAGES } from './lib/i18n';
 import { initLiveRegion, announce, addSkipLink, KEYBOARD_SHORTCUTS, trapFocus } from './lib/a11y';
 import type { EditorView } from '@codemirror/view';
@@ -104,6 +93,15 @@ let aiConversationMode = false;
 let aiIsGenerating = false;
 const AI_ATTACHMENT_TEXT_LIMIT = 8000;
 const AI_ATTACHMENT_PREVIEW_LIMIT = 220;
+
+type AISuggestedActionId = 'create-note' | 'summarize-note' | 'action-items' | 'link-notes';
+
+const AI_SUGGESTED_ACTIONS: ReadonlyArray<{ id: AISuggestedActionId; label: string; title: string }> = [
+  { id: 'create-note', label: 'Create note', title: 'Create a new note' },
+  { id: 'summarize-note', label: 'Summarize note', title: 'Summarize the current note with AI' },
+  { id: 'action-items', label: 'Action items', title: 'Extract action items from the current note' },
+  { id: 'link-notes', label: 'Link notes', title: 'Create and link a new note' },
+];
 
 const RAW_MARKDOWN_DEBOUNCE_MS = 1200;
 const ACTION_PILLS_DEBOUNCE_MS = 1000;
@@ -899,6 +897,57 @@ let localModelAutoloadPromise: Promise<void> | null = null;
 
 const LOCAL_MODEL_SETTING_KEY = 'llm-local-model-id';
 
+type UploadModule = typeof import('./lib/upload');
+type SpeechModule = typeof import('./lib/speech');
+type BackupModule = typeof import('./lib/backup');
+type GoogleDriveProviderModule = typeof import('./lib/sync/google-drive');
+type OneDriveProviderModule = typeof import('./lib/sync/onedrive');
+type DropboxProviderModule = typeof import('./lib/sync/dropbox');
+type AuthPasskeyModule = typeof import('./lib/auth-passkey');
+
+let uploadModulePromise: Promise<UploadModule> | null = null;
+let speechModulePromise: Promise<SpeechModule> | null = null;
+let backupModulePromise: Promise<BackupModule> | null = null;
+let googleDriveProviderModulePromise: Promise<GoogleDriveProviderModule> | null = null;
+let oneDriveProviderModulePromise: Promise<OneDriveProviderModule> | null = null;
+let dropboxProviderModulePromise: Promise<DropboxProviderModule> | null = null;
+let authPasskeyModulePromise: Promise<AuthPasskeyModule> | null = null;
+
+function getUploadModule(): Promise<UploadModule> {
+  if (!uploadModulePromise) uploadModulePromise = import('./lib/upload');
+  return uploadModulePromise;
+}
+
+function getSpeechModule(): Promise<SpeechModule> {
+  if (!speechModulePromise) speechModulePromise = import('./lib/speech');
+  return speechModulePromise;
+}
+
+function getBackupModule(): Promise<BackupModule> {
+  if (!backupModulePromise) backupModulePromise = import('./lib/backup');
+  return backupModulePromise;
+}
+
+function getGoogleDriveProviderModule(): Promise<GoogleDriveProviderModule> {
+  if (!googleDriveProviderModulePromise) googleDriveProviderModulePromise = import('./lib/sync/google-drive');
+  return googleDriveProviderModulePromise;
+}
+
+function getOneDriveProviderModule(): Promise<OneDriveProviderModule> {
+  if (!oneDriveProviderModulePromise) oneDriveProviderModulePromise = import('./lib/sync/onedrive');
+  return oneDriveProviderModulePromise;
+}
+
+function getDropboxProviderModule(): Promise<DropboxProviderModule> {
+  if (!dropboxProviderModulePromise) dropboxProviderModulePromise = import('./lib/sync/dropbox');
+  return dropboxProviderModulePromise;
+}
+
+function getAuthPasskeyModule(): Promise<AuthPasskeyModule> {
+  if (!authPasskeyModulePromise) authPasskeyModulePromise = import('./lib/auth-passkey');
+  return authPasskeyModulePromise;
+}
+
 function setAIProgressState(text?: string, progress?: number): void {
   const nameEl = document.getElementById('aiModelName');
   const bar = document.getElementById('aiProgressBar');
@@ -1021,7 +1070,8 @@ async function ensureAutoLoadedLocalModel(): Promise<void> {
 async function abortAIGeneration(): Promise<void> {
   const { dispatchModule } = await ensureLLMRuntime();
   dispatchModule.abortGeneration();
-  stopTts();
+  const speechModule = await getSpeechModule();
+  speechModule.stopTts();
   aiIsGenerating = false;
   updateAIComposerUI();
 }
@@ -1211,7 +1261,7 @@ function renderApp(): void {
       </div>
       <div class="topbar-logo">
         <div class="topbar-logo-mark">Z</div>
-        <span class="topbar-logo-text">Nexus Notes</span>
+        <span class="topbar-logo-text">Zed Note</span>
       </div>
       <div class="divider-v"></div>
       <div class="search-wrap">
@@ -1249,7 +1299,7 @@ function renderApp(): void {
     </div>
 
     <!-- Main Body -->
-    <div class="app-body">
+    <main class="app-body" id="appMain" role="main">
       <!-- Sidebar: Tree -->
       <aside class="sidebar-tree shell-panel" id="sidebarTree">
         <div class="sidebar-header">
@@ -1331,7 +1381,7 @@ function renderApp(): void {
             <span class="filelist-bulk-count" id="bulkSelectionCount" style="display:none;">0 selected</span>
             <button class="btn btn-ghost btn-sm btn-compact" id="btnBulkMove" style="display:none;">Move</button>
             <button class="btn btn-ghost btn-sm btn-compact" id="btnBulkDelete" style="display:none;color:var(--red);">Delete</button>
-            <select id="sortSelect" class="shell-select shell-select-sm">
+            <select id="sortSelect" class="shell-select shell-select-sm" aria-label="Sort notes">
               <option value="modified">Modified</option>
               <option value="created">Created</option>
               <option value="title">Title</option>
@@ -1343,7 +1393,8 @@ function renderApp(): void {
       </aside>
 
       <!-- Editor Panel -->
-      <main class="editor-panel shell-stage" id="editorPanel">
+      <section class="editor-panel shell-stage" id="editorPanel" role="region" aria-label="Editor panel">
+        <span id="editor-area" tabindex="-1" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;"></span>
         <div class="empty-state" id="emptyState">
           <div class="empty-state-icon"><svg width="30" height="30" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2.5h5l3 3V13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z"/><path d="M9 2.5V6h3"/><path d="M5.4 9.2h5.2M5.4 11.2h3.6"/></svg></div>
           <h3>Welcome to Zed Note</h3>
@@ -1381,7 +1432,7 @@ function renderApp(): void {
             </div>
             <input type="hidden" id="tagsInput" />
             <span class="editor-meta-label editor-meta-label-spaced">Folder</span>
-            <select id="folderSelect" class="shell-select shell-select-sm">
+            <select id="folderSelect" class="shell-select shell-select-sm" aria-label="Note folder">
               <option value="">None</option>
             </select>
           </div>
@@ -1484,7 +1535,7 @@ function renderApp(): void {
             </section>
           </div>
         </div>
-      </main>
+      </section>
 
       <!-- Right Details Panel -->
       <aside class="note-details-panel shell-panel" id="noteDetailsPanel">
@@ -1574,7 +1625,7 @@ function renderApp(): void {
           <input id="aiAttachInput" type="file" accept=".pdf,.docx,.png,.jpg,.jpeg,.webp,.gif,.bmp,.tiff" style="display:none;" />
         </div>
       </aside>
-    </div>
+    </main>
 
     <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
@@ -1593,7 +1644,7 @@ function renderApp(): void {
         <button class="btn btn-ghost btn-icon btn-sm statusbar-details-toggle" id="btnStatusbarDetails" title="Toggle status details" aria-expanded="false">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.2 5.4 8 10.2l4.8-4.8"/></svg>
         </button>
-        <select id="syncProviderQuickSelect" class="shell-select shell-select-sm statusbar-provider-select" title="Sync provider">
+        <select id="syncProviderQuickSelect" class="shell-select shell-select-sm statusbar-provider-select" title="Sync provider" aria-label="Sync provider">
           <option value="gdrive">Google Drive</option>
           <option value="onedrive">OneDrive</option>
           <option value="dropbox">Dropbox</option>
@@ -2421,7 +2472,8 @@ async function init(): Promise<void> {
     }
     await refreshPasskeyEnrollmentStatus('Waiting for passkey confirmation...');
     try {
-      await enrollCurrentUserPasskey();
+      const authPasskeyModule = await getAuthPasskeyModule();
+      await authPasskeyModule.enrollCurrentUserPasskey();
       await refreshPasskeyEnrollmentStatus('Passkey added successfully.');
     } catch (error) {
       await refreshPasskeyEnrollmentStatus(error instanceof Error ? error.message : 'Could not add passkey.');
@@ -2549,10 +2601,11 @@ async function init(): Promise<void> {
     const scopeInput = document.querySelector<HTMLInputElement>('input[name="backupScope"]:checked');
     const scope = (scopeInput?.value ?? 'all') as ExportOptions['scope'];
     try {
-      const blob = await exportToZip({ scope });
+      const backupModule = await getBackupModule();
+      const blob = await backupModule.exportToZip({ scope });
       const date = new Date().toISOString().slice(0, 10);
       const filename = `qp-notes-backup-${scope === 'pinned' ? 'pinned-' : ''}${date}.zip`;
-      downloadBlob(blob, filename);
+      backupModule.downloadBlob(blob, filename);
       const sizeKb = Math.round(blob.size / 1024);
       const noteCount = (await db.notes.toArray()).length;
       addBackupLog({ type: 'export', date, details: `${noteCount} notes · ${sizeKb} KB · scope: ${scope}`, status: 'success' });
@@ -2573,7 +2626,8 @@ async function init(): Promise<void> {
     if (statusEl) statusEl.textContent = 'Restoring…';
     const date = new Date().toISOString().slice(0, 10);
     try {
-      const result = await importFromZip(file);
+      const backupModule = await getBackupModule();
+      const result = await backupModule.importFromZip(file);
       const detail = `${result.notesImported} notes, ${result.foldersCreated} folders` +
         (result.errors.length ? ` (${result.errors.length} errors)` : '');
       if (statusEl) statusEl.textContent = `Restored: ${detail}`;
@@ -2638,7 +2692,7 @@ async function init(): Promise<void> {
   document.getElementById('btnAIFab')?.addEventListener('click', () => {
     void toggleAIPanel();
   });
-  document.getElementById('btnAIPanelClose')?.addEventListener('click', () => closeAIPanel());
+  document.getElementById('btnAIPanelClose')?.addEventListener('click', () => { void closeAIPanel(); });
   document.getElementById('btnAIMobileExpand')?.addEventListener('click', toggleAIMobileExpanded);
   document.getElementById('btnAIModels')?.addEventListener('click', () => {
     void openModelCatalog();
@@ -2674,7 +2728,8 @@ async function init(): Promise<void> {
 
   const btnAIVoiceOutput = document.getElementById('btnAIVoiceOutput') as HTMLButtonElement | null;
   if (btnAIVoiceOutput) {
-    if (!isTtsSupported()) {
+    const speechModule = await getSpeechModule();
+    if (!speechModule.isTtsSupported()) {
       btnAIVoiceOutput.title = 'Text-to-speech not supported in this browser';
       btnAIVoiceOutput.disabled = true;
       btnAIVoiceOutput.style.opacity = '0.4';
@@ -2687,7 +2742,7 @@ async function init(): Promise<void> {
         btnAIVoiceOutput.classList.toggle('ai-voice-active', aiVoiceOutputEnabled);
         btnAIVoiceOutput.setAttribute('aria-pressed', String(aiVoiceOutputEnabled));
         btnAIVoiceOutput.title = aiVoiceOutputEnabled ? 'Voice output on' : 'Voice output off';
-        if (!aiVoiceOutputEnabled) stopTts();
+        if (!aiVoiceOutputEnabled) void getSpeechModule().then((module) => module.stopTts());
         announce(`AI voice output ${aiVoiceOutputEnabled ? 'enabled' : 'disabled'}`);
       });
     }
@@ -2848,7 +2903,8 @@ async function init(): Promise<void> {
   // Populate speech language selector
   const selSpeechLang = document.getElementById('selSpeechLang') as HTMLSelectElement | null;
   if (selSpeechLang) {
-    selSpeechLang.innerHTML = SPEECH_LANGUAGES.map(l => `<option value="${l.code}"${l.code === speechLang ? ' selected' : ''}>${l.label}</option>`).join('');
+    const speechModule = await getSpeechModule();
+    selSpeechLang.innerHTML = speechModule.SPEECH_LANGUAGES.map(l => `<option value="${l.code}"${l.code === speechLang ? ' selected' : ''}>${l.label}</option>`).join('');
     selSpeechLang.addEventListener('change', () => { speechLang = selSpeechLang.value; });
   }
 
@@ -2885,14 +2941,16 @@ async function init(): Promise<void> {
     dragCounter = 0;
     dropOverlay.style.display = 'none';
     const file = e.dataTransfer?.files[0];
-    if (file && isSupportedFile(file)) {
+    const uploadModule = await getUploadModule();
+    if (file && uploadModule.isSupportedFile(file)) {
       await handleFileUpload(file);
     }
   });
 
   // Clipboard paste with OCR — attached to document so it works regardless of focus
   document.addEventListener('paste', async (e: ClipboardEvent) => {
-    const pasteResult = await handleClipboardPaste(e);
+    const uploadModule = await getUploadModule();
+    const pasteResult = await uploadModule.handleClipboardPaste(e);
     if (pasteResult && editor) {
       insertAtCursor(editor, pasteResult.text);
       announce('Pasted extracted text');
@@ -2902,17 +2960,18 @@ async function init(): Promise<void> {
   // ─── P8: Speech-to-text (mic button) ───
   const btnMic = document.getElementById('btnMic');
   if (btnMic) {
-    if (!isWebSpeechSupported()) {
+    const speechModule = await getSpeechModule();
+    if (!speechModule.isWebSpeechSupported()) {
       btnMic.title = 'Speech recognition not supported in this browser';
       btnMic.style.opacity = '0.4';
     } else {
       btnMic.addEventListener('click', () => {
-        if (getSpeechListening()) {
-          stopSpeech();
+        if (speechModule.getSpeechListening()) {
+          speechModule.stopSpeech();
           btnMic.classList.remove('mic-recording');
           announce('Dictation stopped');
         } else {
-          startWebSpeech(
+          speechModule.startWebSpeech(
             (text: string) => {
               if (editor) insertAtCursor(editor, text + ' ');
             },
@@ -3062,7 +3121,7 @@ async function init(): Promise<void> {
   }
 
   document.getElementById('btnA11yAnnounceTest')?.addEventListener('click', () => {
-    announce('Screen reader test: Nexus Notes is working correctly.');
+    announce('Screen reader test: Zed Note is working correctly.');
     const status = document.getElementById('a11yTestStatus');
     if (status) { status.textContent = 'Announced ✓'; setTimeout(() => { status.textContent = ''; }, 3000); }
   });
@@ -3106,7 +3165,8 @@ async function handleFileUpload(file: File): Promise<void> {
   cancelBtn.addEventListener('click', cancelHandler, { once: true });
 
   try {
-    const result = await extractFromFile(file, (pct: number) => {
+    const uploadModule = await getUploadModule();
+    const result = await uploadModule.extractFromFile(file, (pct: number) => {
       fillEl.style.width = `${Math.round(pct * 100)}%`;
     });
     if (uploadAbortController.signal.aborted) return;
@@ -3133,7 +3193,7 @@ async function handleFileUpload(file: File): Promise<void> {
       providerFileId: null,
     });
     // Save attachment reference
-    await saveAttachment(id as number, file, result.text);
+    await uploadModule.saveAttachment(id as number, file, result.text);
     await refreshFileList();
     await buildSearchIndex();
     await pushLocalNoteToFirestore(id as number);
@@ -4591,7 +4651,8 @@ async function refreshPasskeyEnrollmentStatus(message?: string): Promise<void> {
     return;
   }
 
-  const passkeySupported = await canUsePasskeySignIn().catch(() => false);
+  const authPasskeyModule = await getAuthPasskeyModule();
+  const passkeySupported = await authPasskeyModule.canUsePasskeySignIn().catch(() => false);
   if (!passkeySupported) {
     statusEl.textContent = 'Passkeys are not available on this device/browser.';
     enrollBtn.disabled = true;
@@ -4600,7 +4661,7 @@ async function refreshPasskeyEnrollmentStatus(message?: string): Promise<void> {
 
   enrollBtn.disabled = false;
   try {
-    const status = await getPasskeyEnrollmentStatus();
+    const status = await authPasskeyModule.getPasskeyEnrollmentStatus();
     statusEl.textContent = status.enrolled
       ? 'Passkey enrolled. You can now sign in with biometrics/device unlock.'
       : 'No passkey enrolled yet.';
@@ -5011,9 +5072,21 @@ async function connectProvider(type: 'gdrive' | 'onedrive' | 'dropbox', provided
 
   let provider;
   switch (type) {
-    case 'gdrive': provider = new GoogleDriveProvider(clientId.trim()); break;
-    case 'onedrive': provider = new OneDriveProvider(clientId.trim()); break;
-    case 'dropbox': provider = new DropboxProvider(clientId.trim()); break;
+    case 'gdrive': {
+      const mod = await getGoogleDriveProviderModule();
+      provider = new mod.GoogleDriveProvider(clientId.trim());
+      break;
+    }
+    case 'onedrive': {
+      const mod = await getOneDriveProviderModule();
+      provider = new mod.OneDriveProvider(clientId.trim());
+      break;
+    }
+    case 'dropbox': {
+      const mod = await getDropboxProviderModule();
+      provider = new mod.DropboxProvider(clientId.trim());
+      break;
+    }
   }
 
   try {
@@ -5052,9 +5125,21 @@ async function restoreSyncProvider(): Promise<void> {
 
   let provider;
   switch (type) {
-    case 'gdrive': provider = new GoogleDriveProvider(clientId); break;
-    case 'onedrive': provider = new OneDriveProvider(clientId); break;
-    case 'dropbox': provider = new DropboxProvider(clientId); break;
+    case 'gdrive': {
+      const mod = await getGoogleDriveProviderModule();
+      provider = new mod.GoogleDriveProvider(clientId);
+      break;
+    }
+    case 'onedrive': {
+      const mod = await getOneDriveProviderModule();
+      provider = new mod.OneDriveProvider(clientId);
+      break;
+    }
+    case 'dropbox': {
+      const mod = await getDropboxProviderModule();
+      provider = new mod.DropboxProvider(clientId);
+      break;
+    }
     default: return;
   }
 
@@ -5259,15 +5344,17 @@ async function toggleAIPanel(): Promise<void> {
   }
 }
 
-function closeAIPanel(): void {
+async function closeAIPanel(): Promise<void> {
   document.getElementById('aiPanel')!.classList.remove('open');
   aiMobileExpanded = false;
   aiConversationMode = false;
   if (aiVoiceInputListening) {
-    stopSpeech();
+    const speechModule = await getSpeechModule();
+    speechModule.stopSpeech();
     aiVoiceInputListening = false;
   }
-  stopTts();
+  const speechModule = await getSpeechModule();
+  speechModule.stopTts();
   updateAIComposerUI();
   syncAIPanelUIState();
 }
@@ -5417,7 +5504,7 @@ function updateAIComposerUI(): void {
   if (!btn || !input) return;
 
   btn.classList.toggle('ai-voice-listening', aiVoiceInputListening);
-  btn.classList.toggle('ai-converse-stop', aiIsGenerating || (aiConversationMode && getTtsState() === 'speaking'));
+  btn.classList.toggle('ai-converse-stop', aiIsGenerating || aiConversationMode);
 
   if (aiIsGenerating) {
     btn.title = 'Stop response';
@@ -5446,14 +5533,15 @@ function updateAIComposerUI(): void {
 }
 
 async function attachFileToAIChat(file: File): Promise<void> {
-  if (!isSupportedFile(file)) {
+  const uploadModule = await getUploadModule();
+  if (!uploadModule.isSupportedFile(file)) {
     setStatus('Unsupported file for AI chat. Use PDF, DOCX, or image.');
     return;
   }
 
   try {
     setStatus(`Extracting ${file.name}…`);
-    const result = await extractFromFile(file, (pct: number, label: string) => {
+    const result = await uploadModule.extractFromFile(file, (pct: number, label: string) => {
       setStatus(`${label} ${pct}%`);
     });
 
@@ -5473,26 +5561,27 @@ async function attachFileToAIChat(file: File): Promise<void> {
   }
 }
 
-function startAIListeningTurn(): void {
-  if (!isWebSpeechSupported()) {
+async function startAIListeningTurn(): Promise<void> {
+  const speechModule = await getSpeechModule();
+  if (!speechModule.isWebSpeechSupported()) {
     setStatus('Speech recognition not supported in this browser');
     return;
   }
 
-  if (getSpeechListening()) {
-    stopSpeech();
+  if (speechModule.getSpeechListening()) {
+    speechModule.stopSpeech();
     document.getElementById('btnMic')?.classList.remove('mic-recording');
   }
 
   const aiInputEl = document.getElementById('aiInput') as HTMLTextAreaElement | null;
   if (!aiInputEl) return;
 
-  startWebSpeech(
+  speechModule.startWebSpeech(
     (text: string, isFinal: boolean) => {
       aiInputEl.value = isFinal ? text.trim() : text;
       updateAIComposerUI();
       if (isFinal && aiInputEl.value) {
-        stopSpeech();
+        speechModule.stopSpeech();
         aiVoiceInputListening = false;
         updateAIComposerUI();
         void sendAIMessage();
@@ -5511,8 +5600,9 @@ function startAIListeningTurn(): void {
   updateAIComposerUI();
 }
 
-function stopAIListeningTurn(): void {
-  stopSpeech();
+async function stopAIListeningTurn(): Promise<void> {
+  const speechModule = await getSpeechModule();
+  speechModule.stopSpeech();
   aiVoiceInputListening = false;
   updateAIComposerUI();
 }
@@ -5530,14 +5620,15 @@ async function handleAIConverseAction(): Promise<void> {
 
   if (aiVoiceInputListening) {
     aiConversationMode = false;
-    stopAIListeningTurn();
+    await stopAIListeningTurn();
     announce('Live conversation stopped');
     return;
   }
 
-  if (aiConversationMode && getTtsState() === 'speaking') {
+  const speechModule = await getSpeechModule();
+  if (aiConversationMode && speechModule.getTtsState() === 'speaking') {
     aiConversationMode = false;
-    stopTts();
+    speechModule.stopTts();
     updateAIComposerUI();
     announce('Live conversation stopped');
     return;
@@ -5550,7 +5641,7 @@ async function handleAIConverseAction(): Promise<void> {
   }
 
   aiConversationMode = true;
-  startAIListeningTurn();
+  await startAIListeningTurn();
   announce('Live conversation started. Speak now');
 }
 
@@ -5584,11 +5675,73 @@ function addAIMessage(role: 'user' | 'assistant', content: string): HTMLElement 
       handleResponseAction(btn.dataset.act!, txt);
     });
     wrapper.appendChild(actionsBar);
+
+    const suggestedBar = document.createElement('div');
+    suggestedBar.className = 'ai-suggested-pills';
+    suggestedBar.innerHTML = AI_SUGGESTED_ACTIONS.map((action) =>
+      `<button class="ai-suggest-pill" data-suggest-act="${action.id}" title="${action.title}">${action.label}</button>`
+    ).join('');
+    suggestedBar.addEventListener('click', (e: Event) => {
+      const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-suggest-act]');
+      if (!btn) return;
+      const action = btn.dataset.suggestAct as AISuggestedActionId | undefined;
+      if (!action) return;
+      void handleAISuggestedAction(action);
+    });
+    wrapper.appendChild(suggestedBar);
   }
 
   container.appendChild(wrapper);
   container.scrollTop = container.scrollHeight;
   return bodyEl;
+}
+
+async function createLinkedNoteFromCurrent(): Promise<void> {
+  if (!currentNote?.id || !editor) {
+    setStatus('Open a note to link first.');
+    return;
+  }
+
+  const sourceNoteId = currentNote.id;
+
+  try {
+    await saveCurrentNote(true);
+    await createNewNote();
+
+    const linkedTitle = (currentNote?.title || '').trim() || `Untitled ${new Date().toLocaleDateString()}`;
+    const backlinkToken = `[[${linkedTitle}]]`;
+
+    await openNote(sourceNoteId);
+    if (!editor) {
+      setStatus('Could not link notes: editor is unavailable.');
+      return;
+    }
+
+    const needsLeadingBreak = editor.state.doc.length > 0;
+    insertAtCursor(editor, `${needsLeadingBreak ? '\n' : ''}${backlinkToken}`);
+    await saveCurrentNote(true);
+    await updateBacklinks();
+    setStatus('Linked note created.');
+  } catch {
+    setStatus('Failed to create linked note.');
+  }
+}
+
+async function handleAISuggestedAction(action: AISuggestedActionId): Promise<void> {
+  switch (action) {
+    case 'create-note':
+      await createNewNote();
+      break;
+    case 'summarize-note':
+      await runQuickPrompt('Summarize');
+      break;
+    case 'action-items':
+      await runQuickPrompt('Action Items');
+      break;
+    case 'link-notes':
+      await createLinkedNoteFromCurrent();
+      break;
+  }
 }
 
 async function sendAIMessage(): Promise<void> {
@@ -5673,12 +5826,13 @@ async function sendAIMessage(): Promise<void> {
     aiChatHistory.push({ role: 'user', content: text });
     aiChatHistory.push({ role: 'assistant', content: fullResponse });
 
-    if (aiVoiceOutputEnabled && isTtsSupported()) {
-      await speakText(fullResponse, { lang: speechLang });
+    const speechModule = await getSpeechModule();
+    if (aiVoiceOutputEnabled && speechModule.isTtsSupported()) {
+      await speechModule.speakText(fullResponse, { lang: speechLang });
     }
 
     if (aiConversationMode && document.getElementById('aiPanel')?.classList.contains('open')) {
-      startAIListeningTurn();
+      await startAIListeningTurn();
     }
   }
 }
@@ -6017,7 +6171,7 @@ function renderLoginScreen(offlineNoSession = false): void {
           <span aria-hidden="true">Theme</span>
         </button>
       </div>
-
+      <main class="auth-main" role="main">
       <div class="auth-card">
         <div class="auth-logo auth-logo-centered">
           <div class="auth-logo-mark">Z</div>
@@ -6056,6 +6210,7 @@ function renderLoginScreen(offlineNoSession = false): void {
           <p class="auth-disclaimer">Your notes are stored locally on this device first, then synced through your Google account via Firestore. Zed Notetaker keeps the app usable offline and syncs when your connection returns.</p>
         `}
       </div>
+      </main>
     </div>
   `;
 
@@ -6080,7 +6235,8 @@ function renderLoginScreen(offlineNoSession = false): void {
 
   if (passkeyBtn && passkeyContainer) {
     void (async () => {
-      const supported = await canUsePasskeySignIn().catch(() => false);
+      const authPasskeyModule = await getAuthPasskeyModule();
+      const supported = await authPasskeyModule.canUsePasskeySignIn().catch(() => false);
       if (!supported) {
         passkeyContainer.style.display = 'none';
         return;
@@ -6098,7 +6254,7 @@ function renderLoginScreen(offlineNoSession = false): void {
         if (passkeyMsg) passkeyMsg.textContent = 'Waiting for passkey confirmation...';
 
         try {
-          const customToken = await signInWithPasskeyFlow();
+          const customToken = await authPasskeyModule.signInWithPasskeyFlow();
           await signInWithAuthToken(customToken);
         } catch (error) {
           if (passkeyMsg) {
@@ -6158,6 +6314,10 @@ async function bootApp(user: User): Promise<void> {
   // Initialise the UID-scoped database before anything else accesses it
   initDb(user.uid);
 
+  if (localStorage.getItem('e2e-mode') === 'true') {
+    await setSetting('onboarded', 'true');
+  }
+
   await init();
 
   // Render user badge immediately so UI is fully usable
@@ -6176,6 +6336,18 @@ async function bootApp(user: User): Promise<void> {
 (async () => {
   // Initialise Firebase SDK
   initFirebase();
+
+  // Optional test bypass for deterministic E2E flows in CI/local automation.
+  if (localStorage.getItem('e2e-bypass-auth') === '1') {
+    const mockUser = {
+      uid: localStorage.getItem('e2e-user-id') || 'e2e-user',
+      displayName: 'E2E User',
+      email: 'e2e@example.com',
+      photoURL: null,
+    } as User;
+    await bootApp(mockUser);
+    return;
+  }
 
   // Handle OAuth redirect result (mobile fallback from signInWithRedirect)
   await handleRedirectResult();
