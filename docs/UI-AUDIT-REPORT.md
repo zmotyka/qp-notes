@@ -92,7 +92,7 @@
 - [x] Improve mobile ergonomics by closing bottom drawer when opening AI panel.
 
 ### Sprint 2 (Deeper polish)
-- [ ] Persist explorer section collapse state across sessions/devices.
-- [ ] Add deterministic app-level AI model catalog mock mode for E2E/visual stability.
+- [x] Persist explorer section collapse state across sessions/devices.
+- [x] Add deterministic app-level AI model catalog mock mode for E2E/visual stability.
 - [ ] Continue semantic token migration for remaining ad-hoc color-mix branches.
 - [ ] Add CI quality gates by risk class (functional/a11y hard gate, visual/lighthouse trend gate).

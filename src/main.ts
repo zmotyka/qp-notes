@@ -19,7 +19,7 @@ import { initDb, getDb, db, getSetting, setSetting, type Note, type Folder } fro
 import { loadThemeFromSettings, saveTheme, saveAccent, getTheme, getAccent, THEMES, ACCENTS, type ThemeName, type AccentColor } from './lib/theme';
 import { createEditor, wrapSelection, insertLinePrefix, insertAtCursor, replaceContent, getSelectedText, type EditorOptions } from './lib/editor';
 import { initTips, TIPS, type Tip } from './lib/tips';
-import { buildSearchIndex, indexNote, removeFromIndex, searchNotes } from './lib/search';
+import { buildSearchIndex as rebuildSearchCoreIndex, indexNote, removeFromIndex, searchNotes } from './lib/search';
 import { syncEngine, type SyncResult } from './lib/sync/sync-engine';
 import {
   pushNote as pushFirestoreNote,
@@ -92,6 +92,8 @@ type PendingAIAttachment = {
 let pendingAIAttachment: PendingAIAttachment | null = null;
 let aiConversationMode = false;
 let aiIsGenerating = false;
+let searchIndexReady = false;
+let searchIndexBuildPromise: Promise<void> | null = null;
 const AI_ATTACHMENT_TEXT_LIMIT = 8000;
 const AI_ATTACHMENT_PREVIEW_LIMIT = 220;
 
@@ -140,6 +142,35 @@ const MANAGED_SYNC_CLIENT_IDS: Record<SyncProviderType, string> = {
 
 function getManagedSyncClientId(type: SyncProviderType): string {
   return MANAGED_SYNC_CLIENT_IDS[type] || '';
+}
+
+async function rebuildSearchIndex(): Promise<void> {
+  searchIndexBuildPromise = (async () => {
+    await rebuildSearchCoreIndex();
+    searchIndexReady = true;
+  })();
+  await searchIndexBuildPromise;
+}
+
+async function ensureSearchIndexReady(): Promise<void> {
+  if (searchIndexReady) return;
+  if (!searchIndexBuildPromise) {
+    searchIndexBuildPromise = (async () => {
+      await rebuildSearchCoreIndex();
+      searchIndexReady = true;
+    })();
+  }
+  await searchIndexBuildPromise;
+}
+
+function scheduleSearchIndexBuild(): void {
+  if (searchIndexReady || searchIndexBuildPromise) return;
+  const run = () => { void ensureSearchIndexReady(); };
+  if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+    (window as Window & { requestIdleCallback: (cb: IdleRequestCallback) => number }).requestIdleCallback(() => run());
+  } else {
+    window.setTimeout(run, 500);
+  }
 }
 
 const AI_PROVIDER_SETUP: Record<string, { docsUrl: string; steps: string[]; keyHint: string }> = {
@@ -1422,7 +1453,7 @@ async function initFirestoreRealtimeSync(uid: string): Promise<void> {
       }
     }
 
-    await buildSearchIndex();
+    await rebuildSearchIndex();
     await refreshFileList();
     await refreshFolders();
   });
@@ -2402,7 +2433,7 @@ async function init(): Promise<void> {
   await refreshFileList();
 
   // Build full-text search index
-  await buildSearchIndex();
+  scheduleSearchIndexBuild();
 
   const savedFocusMode = localStorage.getItem('focusModeEnabled') === 'true';
   setFocusModeEnabled(savedFocusMode);
@@ -2652,8 +2683,10 @@ async function init(): Promise<void> {
   let searchTimer: ReturnType<typeof setTimeout> | null = null;
   document.getElementById('searchInput')?.addEventListener('input', (e: Event) => {
     if (searchTimer) clearTimeout(searchTimer);
-    searchTimer = setTimeout(() => {
-      refreshFileList('all', (e.target as HTMLInputElement).value);
+    searchTimer = setTimeout(async () => {
+      const query = (e.target as HTMLInputElement).value;
+      if (query.trim()) await ensureSearchIndexReady();
+      refreshFileList('all', query);
     }, 300);
   });
 
@@ -2912,7 +2945,7 @@ async function init(): Promise<void> {
       addBackupLog({ type: 'restore', date, details: detail, status: 'success' });
       await refreshFileList();
       await refreshFolders();
-      await buildSearchIndex();
+      await rebuildSearchIndex();
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'error';
       if (statusEl) statusEl.textContent = `Restore failed: ${msg}`;
@@ -3474,7 +3507,7 @@ async function handleFileUpload(file: File): Promise<void> {
     // Save attachment reference
     await uploadModule.saveAttachment(id as number, file, result.text);
     await refreshFileList();
-    await buildSearchIndex();
+    await rebuildSearchIndex();
     await pushLocalNoteToFirestore(id as number);
     openNote(id as number);
     announce(`Imported: ${title}`);
@@ -5551,7 +5584,7 @@ async function doSync(silent = false): Promise<void> {
   // Refresh file list to show any pulled notes
   if (result.pulled > 0) {
     await refreshFileList();
-    await buildSearchIndex();
+    await rebuildSearchIndex();
   }
 }
 
@@ -5754,6 +5787,31 @@ function closeModelCatalog(): void {
 async function renderModelCatalog(): Promise<void> {
   const list = document.getElementById('modelCatalogList')!;
   const gpuEl = document.getElementById('gpuInfo')!;
+
+  const useE2EMockCatalog =
+    localStorage.getItem('e2e-mode') === 'true' &&
+    localStorage.getItem('e2e-mock-model-catalog') === 'true';
+  if (useE2EMockCatalog) {
+    gpuEl.textContent = 'WebGPU: ✓ (Mock GPU)';
+    list.innerHTML = `
+      <div class="model-card" style="border:1px solid var(--accent);border-radius:8px;padding:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <strong style="font-size:13px;">Mock Model</strong>
+            <span style="font-size:10px;color:var(--accent);margin-left:6px;">● LOADED</span>
+            <p style="font-size:11px;color:var(--text3);margin:2px 0 0;">Deterministic visual baseline entry.</p>
+            <span style="font-size:10px;color:var(--text3);">1.2 GB · Cached</span>
+          </div>
+          <div style="display:flex;gap:4px;flex-shrink:0;">
+            <button class="btn btn-ghost btn-sm">Unload</button>
+            <button class="btn btn-ghost btn-sm" style="color:var(--red);">Delete</button>
+          </div>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
   const { engineModule } = await ensureLLMRuntime();
   const { detectWebGPU, llmEngine } = engineModule;
 

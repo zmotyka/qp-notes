@@ -45,29 +45,7 @@ const states: Array<{ name: string; selector: string; prepare?: (page: Page) => 
       await ensureShellReady(page);
       await openAIFromCurrentViewport(page);
       await page.evaluate(() => {
-        const overlay = document.getElementById('modelCatalogOverlay') as HTMLElement | null;
-        const gpu = document.getElementById('gpuInfo');
-        const list = document.getElementById('modelCatalogList');
-        if (overlay) overlay.style.display = 'flex';
-        if (gpu) gpu.textContent = 'WebGPU: ✓ (Mock GPU)';
-        if (list) {
-          list.innerHTML = `
-            <div class="model-card" style="border:1px solid var(--accent);border-radius:8px;padding:12px;">
-              <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-                <div>
-                  <strong style="font-size:13px;">Mock Model</strong>
-                  <span style="font-size:10px;color:var(--accent);margin-left:6px;">● LOADED</span>
-                  <p style="font-size:11px;color:var(--text3);margin:2px 0 0;">Deterministic visual baseline entry.</p>
-                  <span style="font-size:10px;color:var(--text3);">1.2 GB · Cached</span>
-                </div>
-                <div style="display:flex;gap:4px;flex-shrink:0;">
-                  <button class="btn btn-ghost btn-sm">Unload</button>
-                  <button class="btn btn-ghost btn-sm" style="color:var(--red);">Delete</button>
-                </div>
-              </div>
-            </div>
-          `;
-        }
+        document.getElementById('btnAIModels')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
       });
     },
   },

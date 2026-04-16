@@ -7,6 +7,7 @@ export async function installMockEnvironment(page: Page): Promise<void> {
       localStorage.setItem('e2e-bypass-auth', '1');
     }
     localStorage.setItem('e2e-user-id', 'e2e-user');
+    localStorage.setItem('e2e-mock-model-catalog', 'true');
     localStorage.setItem('high-contrast', 'false');
     localStorage.setItem('reduce-motion', 'true');
     localStorage.setItem('focus-ring-always', 'true');
