@@ -371,6 +371,7 @@ function closeCompactMenus(): void {
   setCompactMenuOpen('btnTopbarMore', 'topbarMoreMenu', false);
   setCompactMenuOpen('btnEditorMore', 'editorMoreMenu', false);
   setCompactMenuOpen('btnToggleFormatMore', 'formatMorePanel', false);
+  setCompactMenuOpen('btnMobileShellMenu', 'mobileShellMenu', false);
 }
 
 function toggleCompactMenu(triggerId: string, panelId: string): void {
@@ -582,6 +583,10 @@ function wireMobileBottomDrawerGestures(): void {
     if (dy > 72) closeMobileBottomDrawer();
   };
 
+  handle?.addEventListener('click', () => {
+    if (!drawer.classList.contains('open')) void openMobileBottomDrawer('toc');
+  });
+
   for (const el of [handle, header]) {
     if (!el) continue;
     el.addEventListener('touchstart', (ev: Event) => {
@@ -724,10 +729,11 @@ function mergeWorkspacePanels(): void {
   sidebarTree.classList.add('workspace-merged');
   sidebarFilelist.remove();
 
-  const notesMobileBtn = document.getElementById('btnMobileNotes');
-  if (notesMobileBtn) {
-    notesMobileBtn.title = 'Open Workspace';
-    notesMobileBtn.setAttribute('aria-label', 'Open Workspace');
+  const explorerMobileBtn = document.getElementById('btnMobileExplorer');
+  if (explorerMobileBtn) {
+    explorerMobileBtn.textContent = 'Workspace';
+    explorerMobileBtn.title = 'Open workspace';
+    explorerMobileBtn.setAttribute('aria-label', 'Open workspace');
   }
 }
 
@@ -1621,16 +1627,14 @@ function renderApp(): void {
     <!-- Topbar -->
     <header class="topbar shell-chrome">
       <h1 class="sr-only">Zed Note</h1>
-      <div class="topbar-mobile-controls">
-        <button class="btn btn-ghost btn-icon btn-sm mobile-only" id="btnMobileExplorer" title="Open Explorer">
+      <div class="topbar-mobile-controls ui-compact-menu topbar-mobile-shell">
+        <button class="btn btn-ghost btn-icon btn-sm mobile-only" type="button" id="btnMobileShellMenu" title="Navigation" aria-label="Open navigation menu" aria-expanded="false" aria-haspopup="true">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2.5 4h11M2.5 8h11M2.5 12h11"/></svg>
         </button>
-        <button class="btn btn-ghost btn-icon btn-sm mobile-only" id="btnMobileNotes" title="Open Notes Tree">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.6 4.2h4.8M2.6 8h4.8M2.6 11.8h4.8"/><circle cx="11.6" cy="4.2" r="1"/><circle cx="11.6" cy="8" r="1"/><circle cx="11.6" cy="11.8" r="1"/></svg>
-        </button>
-        <button class="btn btn-ghost btn-icon btn-sm mobile-only" id="btnMobileToc" title="Table of Contents / Favorites">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h10M3 8h7M3 12h5"/></svg>
-        </button>
+        <div class="ui-compact-menu-panel mobile-shell-menu-panel" id="mobileShellMenu" hidden>
+          <button type="button" class="ui-compact-menu-item" id="btnMobileExplorer">Workspace</button>
+          <button type="button" class="ui-compact-menu-item" id="btnMobileToc">Contents &amp; favorites</button>
+        </div>
       </div>
       <div class="topbar-logo">
         <div class="topbar-logo-mark">Z</div>
@@ -1638,6 +1642,9 @@ function renderApp(): void {
       </div>
       <div class="divider-v"></div>
       <div class="search-wrap">
+        <button type="button" class="btn btn-ghost btn-icon btn-sm mobile-only mobile-search-back" id="btnMobileSearchBack" aria-label="Close search">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg>
+        </button>
         <span class="search-icon">
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6.5" cy="6.5" r="4.5"/><line x1="10" y1="10" x2="14" y2="14"/></svg>
         </span>
@@ -2556,6 +2563,7 @@ async function init(): Promise<void> {
     if (event.key === 'Escape') {
       closeCompactMenus();
       setFormattingToolbarExpanded(false);
+      document.getElementById('app')?.classList.remove('topbar-search-expanded');
     }
   });
   modernizeDialogCloseIcons();
@@ -2564,9 +2572,18 @@ async function init(): Promise<void> {
 
   initTips(() => {});
 
-  document.getElementById('btnMobileExplorer')?.addEventListener('click', () => toggleMobileDrawer('tree'));
-  document.getElementById('btnMobileNotes')?.addEventListener('click', () => toggleMobileDrawer('notes'));
-  document.getElementById('btnMobileToc')?.addEventListener('click', () => { void openMobileBottomDrawer('toc'); });
+  document.getElementById('btnMobileShellMenu')?.addEventListener('click', (event) => {
+    event.stopPropagation();
+    toggleCompactMenu('btnMobileShellMenu', 'mobileShellMenu');
+  });
+  document.getElementById('btnMobileExplorer')?.addEventListener('click', () => {
+    closeCompactMenus();
+    toggleMobileDrawer('tree');
+  });
+  document.getElementById('btnMobileToc')?.addEventListener('click', () => {
+    closeCompactMenus();
+    void openMobileBottomDrawer('toc');
+  });
   document.getElementById('btnMobileTocPeek')?.addEventListener('click', () => { void openMobileBottomDrawer('toc'); });
   document.getElementById('sidebarBackdrop')?.addEventListener('click', closeMobileDrawers);
   document.getElementById('btnCloseMobileDrawer')?.addEventListener('click', closeMobileBottomDrawer);
@@ -2885,7 +2902,9 @@ async function init(): Promise<void> {
 
   // Wire up search
   let searchTimer: ReturnType<typeof setTimeout> | null = null;
-  document.getElementById('searchInput')?.addEventListener('input', (e: Event) => {
+  const searchInputEl = document.getElementById('searchInput') as HTMLInputElement | null;
+  const appShell = document.getElementById('app');
+  searchInputEl?.addEventListener('input', (e: Event) => {
     if (searchTimer) clearTimeout(searchTimer);
     searchTimer = setTimeout(async () => {
       const query = (e.target as HTMLInputElement).value;
@@ -2893,6 +2912,30 @@ async function init(): Promise<void> {
       refreshFileList('all', query);
     }, 300);
   });
+  if (searchInputEl && appShell) {
+    searchInputEl.addEventListener('focus', () => {
+      if (isMobileViewport()) {
+        closeCompactMenus();
+        appShell.classList.add('topbar-search-expanded');
+      }
+    });
+    searchInputEl.addEventListener('blur', () => {
+      window.setTimeout(() => {
+        if (document.activeElement === searchInputEl) return;
+        if (isMobileViewport()) appShell.classList.remove('topbar-search-expanded');
+      }, 160);
+    });
+    document.getElementById('btnMobileSearchBack')?.addEventListener('click', () => {
+      appShell.classList.remove('topbar-search-expanded');
+      searchInputEl.blur();
+    });
+    document.querySelector('.search-wrap')?.addEventListener('click', (ev: Event) => {
+      if (!isMobileViewport() || appShell.classList.contains('topbar-search-expanded')) return;
+      const t = ev.target as HTMLElement;
+      if (t.closest('button') || t.closest('input')) return;
+      searchInputEl.focus();
+    });
+  }
 
   // Keyboard shortcuts
   document.addEventListener('keydown', (e: KeyboardEvent) => {
@@ -7024,7 +7067,7 @@ function renderUserBadge(user: User): void {
   badge.className = 'auth-user-badge';
   badge.innerHTML = `
     ${user.photoURL ? `<img src="${user.photoURL}" alt="${user.displayName ?? 'User'}" class="auth-user-avatar" referrerpolicy="no-referrer" />` : `<span class="auth-user-initials">${(user.displayName ?? 'U')[0].toUpperCase()}</span>`}
-    <button class="btn btn-ghost btn-sm auth-signout-btn" id="btnSignOut" title="Sign out (${user.email ?? ''})">Sign out</button>
+    <button class="btn btn-ghost btn-sm auth-signout-btn" id="btnSignOut" type="button" title="Sign out (${user.email ?? ''})" aria-label="Sign out"><span class="auth-signout-label">Sign out</span></button>
   `;
   actions.appendChild(badge);
 
