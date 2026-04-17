@@ -55,18 +55,53 @@ function passkeyApiUrl(path: string): string {
   return `${PASSKEY_API_BASE}${path}`;
 }
 
-async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init?.headers || {}),
-    },
-  });
+function isLikelyPasskeyNetworkFailure(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  return /load failed|failed to fetch|networkerror|network request failed/i.test(err.message);
+}
 
-  const data = (await response.json().catch(() => ({}))) as T & { error?: string };
+async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(init?.headers || {}),
+      },
+    });
+  } catch (e) {
+    if (isLikelyPasskeyNetworkFailure(e)) {
+      throw new Error(
+        'Passkey server unreachable. Deploy Firebase Cloud Functions for this app (Blaze plan required), '
+        + 'or set VITE_PASSKEY_API_BASE in .env to your functions base URL '
+        + '(e.g. https://us-central1-YOUR_PROJECT.cloudfunctions.net).',
+      );
+    }
+    throw e instanceof Error ? e : new Error(String(e));
+  }
+
+  const raw = await response.text();
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    throw new Error(`Passkey API returned an empty response (${response.status}).`);
+  }
+  if (trimmed.startsWith('<')) {
+    throw new Error(
+      'Passkey API is not available: got a web page instead of JSON. '
+      + 'Firebase Hosting is probably serving the SPA for /api/passkey/* because Cloud Functions are not deployed. '
+      + 'Run firebase deploy (including functions) or set VITE_PASSKEY_API_BASE.',
+    );
+  }
+
+  let data: T & { error?: string };
+  try {
+    data = JSON.parse(raw) as T & { error?: string };
+  } catch {
+    throw new Error(`Passkey API returned invalid JSON (${response.status}).`);
+  }
   if (!response.ok) {
-    const msg = (data as { error?: string }).error || `Request failed (${response.status})`;
+    const msg = data.error || `Request failed (${response.status})`;
     throw new Error(msg);
   }
   return data;
@@ -92,6 +127,9 @@ export async function signInWithPasskeyFlow(): Promise<string> {
     method: 'POST',
     body: JSON.stringify({}),
   });
+  if (!optionsRes.requestId || !optionsRes.options) {
+    throw new Error('Passkey server returned an invalid options payload.');
+  }
 
   const authResponse = await startAuthentication({
     optionsJSON: optionsRes.options as any,

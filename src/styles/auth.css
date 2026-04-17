@@ -40,6 +40,11 @@
     linear-gradient(180deg, color-mix(in srgb, var(--bg) 84%, var(--bg2)), color-mix(in srgb, var(--bg-canvas) 88%, var(--bg)));
 }
 
+/* Single-method login: no top toolbar, comfortable vertical rhythm */
+.auth-screen--simple {
+  padding: 40px 20px 36px;
+}
+
 .auth-main {
   width: 100%;
   display: flex;
@@ -76,7 +81,7 @@
 
 .auth-card {
   position: relative;
-  width: min(100%, 496px);
+  width: min(100%, 420px);
   padding: 28px;
   border-radius: 28px;
   border: 1px solid var(--border);
@@ -85,6 +90,14 @@
   backdrop-filter: blur(12px);
   display: grid;
   gap: 18px;
+}
+
+.auth-screen--simple .auth-card {
+  gap: 22px;
+}
+
+.auth-screen--simple .auth-google-btn {
+  margin-top: 4px;
 }
 
 .auth-logo {
@@ -379,6 +392,10 @@
     padding: 64px 14px 20px;
   }
 
+  .auth-screen--simple {
+    padding: 28px 14px 24px;
+  }
+
   .auth-toolbar {
     justify-content: center;
     gap: 6px;
@@ -397,6 +414,14 @@
 
   .auth-copy {
     text-align: left;
+  }
+
+  .auth-screen--simple .auth-copy {
+    text-align: center;
+  }
+
+  .auth-screen--simple .auth-logo-centered {
+    justify-content: center;
   }
 
   .auth-logo-centered {

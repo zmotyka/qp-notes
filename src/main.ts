@@ -88,6 +88,9 @@ type LayoutPrefs = {
 let selectedSyncProviderType: 'gdrive' | 'onedrive' | 'dropbox' = 'gdrive';
 type SettingsTabId = 'general' | 'sync' | 'ai' | 'security' | 'shortcuts' | 'accessibility';
 let activeSettingsTab: SettingsTabId = 'general';
+
+/** When false, passkey sign-in and Settings → Security are hidden (backend code kept for later). */
+const PASSKEY_UI_ENABLED = false;
 type ExplorerTabId = 'library' | 'folders' | 'tags';
 let activeExplorerTab: ExplorerTabId = 'library';
 type PendingAIAttachment = {
@@ -2065,7 +2068,7 @@ function renderApp(): void {
           <button class="btn btn-sm settings-tab-btn" type="button" data-settings-tab-button="general">General</button>
           <button class="btn btn-sm settings-tab-btn" type="button" data-settings-tab-button="sync">Sync & Backup</button>
           <button class="btn btn-sm settings-tab-btn" type="button" data-settings-tab-button="ai">AI</button>
-          <button class="btn btn-sm settings-tab-btn" type="button" data-settings-tab-button="security">Security</button>
+          ${PASSKEY_UI_ENABLED ? '<button class="btn btn-sm settings-tab-btn" type="button" data-settings-tab-button="security">Security</button>' : ''}
           <button class="btn btn-sm settings-tab-btn" type="button" data-settings-tab-button="shortcuts">Shortcuts</button>
           <button class="btn btn-sm settings-tab-btn" type="button" data-settings-tab-button="accessibility">Accessibility</button>
         </div>
@@ -2191,6 +2194,7 @@ function renderApp(): void {
             </fieldset>
           </section>
 
+          ${PASSKEY_UI_ENABLED ? `
           <section class="settings-tab-panel" data-settings-tab="security" style="display:none;">
             <fieldset style="border:1px solid var(--border);border-radius:8px;padding:12px;">
               <legend style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Security</legend>
@@ -2201,6 +2205,7 @@ function renderApp(): void {
               </div>
             </fieldset>
           </section>
+          ` : ''}
 
           <!-- ── Shortcuts Tab ──────────────────────────────────── -->
           <section class="settings-tab-panel" data-settings-tab="shortcuts" style="display:none;">
@@ -2974,27 +2979,29 @@ async function init(): Promise<void> {
       if (tab === 'sync') { renderBackupLog(); updateBackupStats(); }
     });
   });
-  document.getElementById('btnEnrollPasskey')?.addEventListener('click', async () => {
-    const btn = document.getElementById('btnEnrollPasskey') as HTMLButtonElement | null;
-    if (btn) {
-      btn.disabled = true;
-      btn.textContent = 'Adding...';
-    }
-    await refreshPasskeyEnrollmentStatus('Waiting for passkey confirmation...');
-    try {
-      const authPasskeyModule = await getAuthPasskeyModule();
-      await authPasskeyModule.enrollCurrentUserPasskey();
-      await refreshPasskeyEnrollmentStatus('Passkey added successfully.');
-    } catch (error) {
-      await refreshPasskeyEnrollmentStatus(error instanceof Error ? error.message : 'Could not add passkey.');
-    } finally {
+  if (PASSKEY_UI_ENABLED) {
+    document.getElementById('btnEnrollPasskey')?.addEventListener('click', async () => {
+      const btn = document.getElementById('btnEnrollPasskey') as HTMLButtonElement | null;
       if (btn) {
-        btn.disabled = false;
-        btn.textContent = 'Add Passkey';
+        btn.disabled = true;
+        btn.textContent = 'Adding...';
       }
-      await refreshPasskeyEnrollmentStatus();
-    }
-  });
+      await refreshPasskeyEnrollmentStatus('Waiting for passkey confirmation...');
+      try {
+        const authPasskeyModule = await getAuthPasskeyModule();
+        await authPasskeyModule.enrollCurrentUserPasskey();
+        await refreshPasskeyEnrollmentStatus('Passkey added successfully.');
+      } catch (error) {
+        await refreshPasskeyEnrollmentStatus(error instanceof Error ? error.message : 'Could not add passkey.');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = 'Add Passkey';
+        }
+        await refreshPasskeyEnrollmentStatus();
+      }
+    });
+  }
 
   // ─── Cloud provider setup assistant ───
   document.getElementById('btnConnectGdrive')?.addEventListener('click', () => setSyncProviderSelection('gdrive'));
@@ -5213,7 +5220,7 @@ function openSettings(tab?: SettingsTabId): void {
   document.getElementById('settingsOverlay')!.style.display = 'flex';
   switchSettingsTab(tab ?? activeSettingsTab);
   updateSyncProviderStatus();
-  void refreshPasskeyEnrollmentStatus();
+  if (PASSKEY_UI_ENABLED) void refreshPasskeyEnrollmentStatus();
   const currentType = (syncEngine.getProvider()?.id === 'google-drive'
     ? 'gdrive'
     : syncEngine.getProvider()?.id === 'onedrive'
@@ -5255,6 +5262,7 @@ function switchSettingsTab(tabId: SettingsTabId): void {
 }
 
 async function refreshPasskeyEnrollmentStatus(message?: string): Promise<void> {
+  if (!PASSKEY_UI_ENABLED) return;
   const statusEl = document.getElementById('passkeyEnrollmentStatus');
   const enrollBtn = document.getElementById('btnEnrollPasskey') as HTMLButtonElement | null;
   if (!statusEl || !enrollBtn) return;
@@ -6873,8 +6881,6 @@ void _editingNoteTemplateId;
 /* ─── Boot ─── */
 /* ─── Login Screen ─── */
 
-let _signOutCleanup: (() => void) | null = null;
-
 function renderLoginScreen(offlineNoSession = false): void {
   const app = document.getElementById('app')!;
   const googleButtonMarkup = `
@@ -6887,8 +6893,9 @@ function renderLoginScreen(offlineNoSession = false): void {
     <span>Continue with Google</span>
   `;
   app.innerHTML = `
-    <div class="auth-screen">
-      <div class="auth-toolbar">
+    <div class="auth-screen${PASSKEY_UI_ENABLED ? '' : ' auth-screen--simple'}">
+      ${PASSKEY_UI_ENABLED ? `
+      <div class="auth-toolbar" role="presentation">
         <button class="auth-toolbar-btn" type="button" aria-label="Toggle RTL" title="Toggle RTL (coming soon)">
           <span aria-hidden="true">RTL</span>
         </button>
@@ -6899,6 +6906,7 @@ function renderLoginScreen(offlineNoSession = false): void {
           <span aria-hidden="true">Theme</span>
         </button>
       </div>
+      ` : ''}
       <main class="auth-main" role="main">
       <div class="auth-card">
         <div class="auth-logo auth-logo-centered">
@@ -6907,14 +6915,19 @@ function renderLoginScreen(offlineNoSession = false): void {
         </div>
         <div class="auth-copy">
           <h1 class="auth-title">Welcome to Zed Notetaker</h1>
-          <p class="auth-tagline">Sign in to access your secure workspace.</p>
+          <p class="auth-tagline">${offlineNoSession
+    ? 'You need an internet connection to sign in.'
+    : PASSKEY_UI_ENABLED
+      ? 'Sign in to access your secure workspace.'
+      : 'Sign in once with Google. Your notes stay on this device and sync when you are online.'}</p>
         </div>
         ${offlineNoSession ? `
           <div class="auth-offline-notice">
             <span class="auth-offline-icon" aria-hidden="true">!</span>
-            <span>You're offline. Please connect to the internet and sign in at least once to use Zed Notetaker.</span>
+            <span>You're offline. Connect to the internet and sign in at least once. After that, you can use your notes offline.</span>
           </div>
         ` : `
+          ${PASSKEY_UI_ENABLED ? `
           <div class="auth-primary-action" id="passkeyLoginContainer" style="display:none;">
             <button class="auth-passkey-btn" id="btnPasskeySignIn" type="button" title="Sign in with your device passkey">
               <span class="auth-passkey-icon" aria-hidden="true">*</span>
@@ -6932,10 +6945,13 @@ function renderLoginScreen(offlineNoSession = false): void {
             <em>or continue with</em>
             <span></span>
           </div>
-          <button class="auth-google-btn" id="btnGoogleSignIn">
+          ` : ''}
+          <button class="auth-google-btn" id="btnGoogleSignIn" type="button">
             ${googleButtonMarkup}
           </button>
-          <p class="auth-disclaimer">Your notes are stored locally on this device first, then synced through your Google account via Firestore. Zed Notetaker keeps the app usable offline and syncs when your connection returns.</p>
+          <p class="auth-disclaimer">${PASSKEY_UI_ENABLED
+    ? 'Your notes are stored locally on this device first, then synced through your Google account via Firestore. Zed Notetaker keeps the app usable offline and syncs when your connection returns.'
+    : 'Notes are saved on this device and synced with Google (Firestore) when connected. We never see your Google password.'}</p>
         `}
       </div>
       </main>
@@ -6957,42 +6973,44 @@ function renderLoginScreen(offlineNoSession = false): void {
     }
   });
 
-  const passkeyBtn = document.getElementById('btnPasskeySignIn') as HTMLButtonElement | null;
-  const passkeyContainer = document.getElementById('passkeyLoginContainer') as HTMLElement | null;
-  const passkeyMsg = document.getElementById('authPasskeyMsg') as HTMLElement | null;
+  if (PASSKEY_UI_ENABLED) {
+    const passkeyBtn = document.getElementById('btnPasskeySignIn') as HTMLButtonElement | null;
+    const passkeyContainer = document.getElementById('passkeyLoginContainer') as HTMLElement | null;
+    const passkeyMsg = document.getElementById('authPasskeyMsg') as HTMLElement | null;
 
-  if (passkeyBtn && passkeyContainer) {
-    void (async () => {
-      const authPasskeyModule = await getAuthPasskeyModule();
-      const supported = await authPasskeyModule.canUsePasskeySignIn().catch(() => false);
-      if (!supported) {
-        passkeyContainer.style.display = 'none';
-        return;
-      }
-
-      passkeyContainer.style.display = 'grid';
-      if (passkeyMsg) {
-        passkeyMsg.textContent = 'Use a passkey to sign in without entering a password.';
-      }
-
-      passkeyBtn.addEventListener('click', async () => {
-        passkeyBtn.disabled = true;
-        const googleBtn = document.getElementById('btnGoogleSignIn') as HTMLButtonElement | null;
-        if (googleBtn) googleBtn.disabled = true;
-        if (passkeyMsg) passkeyMsg.textContent = 'Waiting for passkey confirmation...';
-
-        try {
-          const customToken = await authPasskeyModule.signInWithPasskeyFlow();
-          await signInWithAuthToken(customToken);
-        } catch (error) {
-          if (passkeyMsg) {
-            passkeyMsg.textContent = error instanceof Error ? error.message : 'Passkey sign-in failed';
-          }
-          passkeyBtn.disabled = false;
-          if (googleBtn) googleBtn.disabled = false;
+    if (passkeyBtn && passkeyContainer) {
+      void (async () => {
+        const authPasskeyModule = await getAuthPasskeyModule();
+        const supported = await authPasskeyModule.canUsePasskeySignIn().catch(() => false);
+        if (!supported) {
+          passkeyContainer.style.display = 'none';
+          return;
         }
-      });
-    })();
+
+        passkeyContainer.style.display = 'grid';
+        if (passkeyMsg) {
+          passkeyMsg.textContent = 'Use a passkey to sign in without entering a password.';
+        }
+
+        passkeyBtn.addEventListener('click', async () => {
+          passkeyBtn.disabled = true;
+          const googleBtn = document.getElementById('btnGoogleSignIn') as HTMLButtonElement | null;
+          if (googleBtn) googleBtn.disabled = true;
+          if (passkeyMsg) passkeyMsg.textContent = 'Waiting for passkey confirmation...';
+
+          try {
+            const customToken = await authPasskeyModule.signInWithPasskeyFlow();
+            await signInWithAuthToken(customToken);
+          } catch (error) {
+            if (passkeyMsg) {
+              passkeyMsg.textContent = error instanceof Error ? error.message : 'Passkey sign-in failed';
+            }
+            passkeyBtn.disabled = false;
+            if (googleBtn) googleBtn.disabled = false;
+          }
+        });
+      })();
+    }
   }
 }
 
@@ -7030,9 +7048,8 @@ function renderUserBadge(user: User): void {
     currentNote = null;
     editor = null;
 
-    if (_signOutCleanup) { _signOutCleanup(); _signOutCleanup = null; }
     await signOut();
-    // onAuthStateChanged fires -> shows login screen
+    // Keep onAuthStateChanged subscribed so the handler runs with user === null and shows the login screen.
   });
 }
 
@@ -7085,7 +7102,7 @@ async function bootApp(user: User): Promise<void> {
   app.innerHTML = '<div class="auth-loading"><div class="auth-spinner"></div></div>';
 
   // Subscribe to auth state — this fires immediately with cached state (no network needed)
-  const unsubscribe = onAuthStateChanged(async (user) => {
+  onAuthStateChanged(async (user) => {
     if (user) {
       // Authenticated (online or offline via cached token)
       await bootApp(user);
@@ -7106,7 +7123,4 @@ async function bootApp(user: User): Promise<void> {
       }
     }
   });
-
-  // Store unsubscribe for sign-out cleanup
-  _signOutCleanup = unsubscribe;
 })();
