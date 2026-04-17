@@ -516,6 +516,10 @@ function isMobileViewport(): boolean {
   return window.matchMedia('(max-width: 768px)').matches;
 }
 
+function syncAppEditorNoteActiveClass(): void {
+  document.getElementById('app')?.classList.toggle('editor-note-active', Boolean(currentNote));
+}
+
 function closeMobileDrawers(): void {
   document.getElementById('sidebarTree')?.classList.remove('open');
   document.getElementById('sidebarFilelist')?.classList.remove('open');
@@ -523,8 +527,11 @@ function closeMobileDrawers(): void {
 }
 
 function closeMobileBottomDrawer(): void {
-  document.getElementById('mobileBottomDrawer')?.classList.remove('open');
+  const drawer = document.getElementById('mobileBottomDrawer');
+  drawer?.classList.remove('open');
+  drawer?.style.removeProperty('transform');
   document.getElementById('mobileBottomDrawerBackdrop')?.classList.remove('open');
+  document.getElementById('app')?.classList.remove('mobile-bottom-drawer-open');
 }
 
 async function openMobileBottomDrawer(tab: 'toc' | 'pinned' = 'toc'): Promise<void> {
@@ -535,9 +542,70 @@ async function openMobileBottomDrawer(tab: 'toc' | 'pinned' = 'toc'): Promise<vo
   const drawer = document.getElementById('mobileBottomDrawer');
   const backdrop = document.getElementById('mobileBottomDrawerBackdrop');
   if (!drawer || !backdrop) return;
+  drawer.style.removeProperty('transform');
   drawer.classList.add('open');
   backdrop.classList.add('open');
+  document.getElementById('app')?.classList.add('mobile-bottom-drawer-open');
   await switchMobileDrawerTab(tab);
+}
+
+function wireMobileBottomDrawerGestures(): void {
+  const drawer = document.getElementById('mobileBottomDrawer');
+  const peek = document.getElementById('btnMobileTocPeek');
+  if (!drawer || !peek) return;
+
+  const handle = drawer.querySelector('.mobile-bottom-drawer-handle');
+  const header = drawer.querySelector('.mobile-bottom-drawer-header');
+  let dragStartY = 0;
+  let draggingDrawer = false;
+
+  const onDrawerDragStart = (clientY: number) => {
+    if (!drawer.classList.contains('open')) return;
+    draggingDrawer = true;
+    dragStartY = clientY;
+    drawer.style.transition = 'none';
+  };
+  const onDrawerDragMove = (clientY: number) => {
+    if (!draggingDrawer) return;
+    const dy = Math.max(0, clientY - dragStartY);
+    drawer.style.transform = `translateY(${dy}px)`;
+  };
+  const onDrawerDragEnd = (clientY: number) => {
+    if (!draggingDrawer) return;
+    draggingDrawer = false;
+    drawer.style.transition = '';
+    const dy = clientY - dragStartY;
+    drawer.style.removeProperty('transform');
+    if (dy > 72) closeMobileBottomDrawer();
+  };
+
+  for (const el of [handle, header]) {
+    if (!el) continue;
+    el.addEventListener('touchstart', (ev: Event) => {
+      const t = ev as TouchEvent;
+      onDrawerDragStart(t.touches[0]?.clientY ?? 0);
+    }, { passive: true });
+    el.addEventListener('touchmove', (ev: Event) => {
+      const t = ev as TouchEvent;
+      onDrawerDragMove(t.touches[0]?.clientY ?? 0);
+    }, { passive: true });
+    el.addEventListener('touchend', (ev: Event) => {
+      const t = ev as TouchEvent;
+      const y = t.changedTouches[0]?.clientY ?? dragStartY;
+      onDrawerDragEnd(y);
+    }, { passive: true });
+  }
+
+  let peekStartY = 0;
+  peek.addEventListener('touchstart', (ev: Event) => {
+    const t = ev as TouchEvent;
+    peekStartY = t.touches[0]?.clientY ?? 0;
+  }, { passive: true });
+  peek.addEventListener('touchend', (ev: Event) => {
+    const t = ev as TouchEvent;
+    const y = t.changedTouches[0]?.clientY ?? peekStartY;
+    if (peekStartY - y > 36) void openMobileBottomDrawer('toc');
+  }, { passive: true });
 }
 
 async function switchMobileDrawerTab(tab: 'toc' | 'pinned'): Promise<void> {
@@ -1187,7 +1255,10 @@ function updateRawGenerationAvailabilityUI(): void {
   const hint = document.getElementById('rawGenerationHint');
   const hintText = document.getElementById('rawGenerationHintText');
   const regenerateBtn = document.getElementById('btnRegenerateMarkdown') as HTMLButtonElement | null;
-  if (!hint || !hintText) return;
+  if (!hint || !hintText) {
+    syncRawModelStatusBadge();
+    return;
+  }
 
   const hasRawInput = getRawEditorValue().trim().length > 0;
   const isReady = currentLLMStatus === 'ready' || currentLLMStatus === 'generating';
@@ -1215,6 +1286,29 @@ function updateRawGenerationAvailabilityUI(): void {
     regenerateBtn.title = canRegenerate
       ? 'Regenerate Markdown from Raw Draft'
       : 'Load an AI model to enable markdown generation';
+  }
+
+  syncRawModelStatusBadge();
+}
+
+function syncRawModelStatusBadge(): void {
+  const el = document.getElementById('rawModelStatusBadge');
+  if (!el) return;
+  const status = currentLLMStatus;
+  el.dataset.llmStatus = status;
+  el.classList.remove('idle', 'loading', 'ready', 'generating', 'error');
+  el.classList.add(status);
+  const detail = currentLLMDetail;
+  if (status === 'ready') {
+    el.textContent = detail ? `Loaded: ${detail}` : 'Model loaded';
+  } else if (status === 'loading') {
+    el.textContent = detail ? `Loading ${detail}` : 'Loading model…';
+  } else if (status === 'generating') {
+    el.textContent = 'Model busy';
+  } else if (status === 'error') {
+    el.textContent = detail ? `Error: ${detail}` : 'Model error';
+  } else {
+    el.textContent = 'No model loaded';
   }
 }
 
@@ -1482,6 +1576,7 @@ async function initFirestoreRealtimeSync(uid: string): Promise<void> {
         document.getElementById('editorContainer')!.style.display = 'none';
         document.getElementById('emptyState')!.style.display = '';
         document.getElementById('editorPane')!.innerHTML = '';
+        syncAppEditorNoteActiveClass();
       }
     } else {
       applyingRemoteChange = true;
@@ -1771,7 +1866,10 @@ function renderApp(): void {
           <div class="editor-content split" id="editorContent">
             <section class="editor-section" data-section="raw">
               <div class="editor-section-header">
-                <span class="editor-section-title">Raw Draft</span>
+                <div class="editor-section-header-primary">
+                  <span class="editor-section-title">Raw Draft</span>
+                  <span class="raw-model-status-badge idle" id="rawModelStatusBadge" title="Local LLM status for raw→markdown">No model loaded</span>
+                </div>
                 <div class="editor-section-actions">
                   <button class="btn btn-ghost btn-sm" id="btnOpenGenerationPrompt" title="Open generation prompt settings">Generation Prompt</button>
                   <span class="generation-prompt-summary" id="generationPromptSummary">Default prompt</span>
@@ -2357,6 +2455,12 @@ function renderApp(): void {
       </div>
     </div>
 
+    <!-- Mobile: peek strip to open TOC / Favorites (sheet is off-screen until opened) -->
+    <button type="button" class="mobile-toc-peek" id="btnMobileTocPeek" aria-label="Open contents and favorites">
+      <span class="mobile-toc-peek-handle" aria-hidden="true"></span>
+      <span class="mobile-toc-peek-label">Contents &amp; favorites</span>
+    </button>
+
     <!-- Mobile Bottom Drawer (TOC / Favorites) -->
     <div class="mobile-bottom-drawer" id="mobileBottomDrawer">
       <div class="mobile-bottom-drawer-handle"></div>
@@ -2409,7 +2513,12 @@ async function init(): Promise<void> {
   document.getElementById('btnWorkspaceEdgeToggle')?.addEventListener('click', () => setWorkspacePanelHidden(!workspacePanelHidden));
   document.getElementById('btnTopbarWorkspace')?.addEventListener('click', () => setWorkspacePanelHidden(!workspacePanelHidden));
   document.getElementById('btnTopbarDetails')?.addEventListener('click', () => setNoteDetailsPanelHidden(!noteDetailsPanelHidden));
-  document.getElementById('btnFocusMode')?.addEventListener('click', () => setFocusModeEnabled(!focusModeEnabled));
+  document.getElementById('btnFocusMode')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    closeCompactMenus();
+    setFocusModeEnabled(!focusModeEnabled);
+  });
   document.getElementById('btnToggleNoteDetailsPanel')?.addEventListener('click', () => setNoteDetailsPanelHidden(!noteDetailsPanelHidden));
   document.getElementById('btnTopbarMore')?.addEventListener('click', (event) => {
     event.stopPropagation();
@@ -2453,9 +2562,11 @@ async function init(): Promise<void> {
   document.getElementById('btnMobileExplorer')?.addEventListener('click', () => toggleMobileDrawer('tree'));
   document.getElementById('btnMobileNotes')?.addEventListener('click', () => toggleMobileDrawer('notes'));
   document.getElementById('btnMobileToc')?.addEventListener('click', () => { void openMobileBottomDrawer('toc'); });
+  document.getElementById('btnMobileTocPeek')?.addEventListener('click', () => { void openMobileBottomDrawer('toc'); });
   document.getElementById('sidebarBackdrop')?.addEventListener('click', closeMobileDrawers);
   document.getElementById('btnCloseMobileDrawer')?.addEventListener('click', closeMobileBottomDrawer);
   document.getElementById('mobileBottomDrawerBackdrop')?.addEventListener('click', closeMobileBottomDrawer);
+  wireMobileBottomDrawerGestures();
   document.querySelectorAll<HTMLElement>('[data-drawer-tab]').forEach(btn => {
     btn.addEventListener('click', () => {
       const tab = btn.dataset.drawerTab as 'toc' | 'pinned';
@@ -2620,6 +2731,7 @@ async function init(): Promise<void> {
     document.getElementById('editorContainer')!.style.display = currentNote ? 'flex' : 'none';
     document.getElementById('emptyState')!.style.display = currentNote ? 'none' : '';
     if (!currentNote) document.getElementById('editorPane')!.innerHTML = '';
+    syncAppEditorNoteActiveClass();
     await refreshFileList();
     setStatus(`Deleted ${ids.length} note${ids.length === 1 ? '' : 's'}`);
   });
@@ -2719,6 +2831,7 @@ async function init(): Promise<void> {
   document.getElementById('rawEditorInput')?.addEventListener('input', (e: Event) => {
     const raw = (e.target as HTMLTextAreaElement).value;
     if (currentNote) currentNote.rawContent = raw;
+    if (raw.trim()) void ensureLLMRuntime();
     updateRawGenerationAvailabilityUI();
     scheduleActionPillsGeneration(raw);
     scheduleMarkdownAutogeneration(raw);
@@ -4201,6 +4314,7 @@ async function openNote(noteId: number): Promise<void> {
 
   // Update status
   setStatus(`Opened: ${note.title || 'Untitled'}`);
+  syncAppEditorNoteActiveClass();
 }
 
 /* ─── Create Note ─── */
@@ -4306,6 +4420,7 @@ async function deleteCurrentNote(): Promise<void> {
   document.getElementById('editorContainer')!.style.display = 'none';
   document.getElementById('emptyState')!.style.display = '';
   document.getElementById('editorPane')!.innerHTML = '';
+  syncAppEditorNoteActiveClass();
 
   await refreshFileList();
   setStatus('Note deleted');
@@ -4489,6 +4604,11 @@ async function generateMarkdownFromRaw(raw: string): Promise<void> {
   try {
     const { engineModule } = await ensureLLMRuntime();
     let llmStatus = engineModule.llmEngine.getStatus();
+    const readyId = llmStatus === 'ready' ? engineModule.llmEngine.getLoadedModelId() ?? undefined : undefined;
+    if (llmStatus !== currentLLMStatus || (llmStatus === 'ready' && readyId !== currentLLMDetail)) {
+      updateAIStatus(llmStatus, llmStatus === 'ready' ? readyId : currentLLMDetail);
+      llmStatus = engineModule.llmEngine.getStatus();
+    }
 
     // Best effort auto-load if a cached local model exists.
     if (llmStatus === 'idle') {
@@ -4565,6 +4685,7 @@ async function tryLoadModelForRawMarkdown(): Promise<void> {
 function scheduleMarkdownAutogeneration(raw: string): void {
   if (markdownAutoGenTimer) clearTimeout(markdownAutoGenTimer);
   markdownAutoGenTimer = setTimeout(() => {
+    if (currentNote) currentNote.markdownDirty = false;
     void generateMarkdownFromRaw(raw);
   }, RAW_MARKDOWN_DEBOUNCE_MS);
 }
@@ -4682,6 +4803,7 @@ function showNoteContextMenu(e: MouseEvent, noteId: number): void {
         document.getElementById('editorContainer')!.style.display = 'none';
         document.getElementById('emptyState')!.style.display = '';
         document.getElementById('editorPane')!.innerHTML = '';
+        syncAppEditorNoteActiveClass();
       }
       await refreshFileList();
     }},
